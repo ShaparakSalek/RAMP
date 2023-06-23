@@ -1,0 +1,5 @@
+conda create -n rampenv python=3.9 scipy numpy pandas matplotlib yaml pyyaml jupyter spyder sphinx six pip obspy
+
+conda activate rampenv
+
+pip install segyio

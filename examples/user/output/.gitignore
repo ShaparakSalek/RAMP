@@ -1,0 +1,9 @@
+*.csv
+*.txt
+*.h5
+*.yaml
+*.png
+*.jpeg
+*.jpg
+*.pdf
+*.npz
