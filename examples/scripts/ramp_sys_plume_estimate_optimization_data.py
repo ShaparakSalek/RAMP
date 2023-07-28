@@ -127,9 +127,9 @@ if __name__ == "__main__":
                discrete_vals=[scenarios,
                               num_scenarios*[1/num_scenarios]])
     # Add gridded observations
-    # dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
-    # dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
-    #                 output_dir=output_directory)
+    dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
+    dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
+                    output_dir=output_directory)
     # dc.add_grid_obs('baseline_{}'.format(obs_name), constr_type='matrix',
     #                 output_dir=output_directory)
 
@@ -219,74 +219,98 @@ if __name__ == "__main__":
                 fmt="%d," + "%1.1f,"+ "%1.3f,"*2 + "%d," + "%1.3f,"*11 + "%1.3f")
 
     # Collect plume
-    plume = np.zeros((num_scenarios, num_time_points, 401, 141))
+    # plume = np.zeros((num_scenarios, num_time_points, 401, 141))
+    # velocity = np.zeros((num_scenarios, num_time_points, 401, 141))
+    delta_velocity = np.zeros((num_scenarios, num_time_points, 401, 141))
     for rlzn_number in range(num_scenarios):
         print('Realization {}'.format(rlzn_number))
-        data = sm.collect_gridded_observations_as_time_series(
-            plest, 'plume', output_directory, indices=time_indices,
-            rlzn_number=rlzn_number+1) # data shape (num_time_points, num_sources, num_receivers)
-        plume[rlzn_number-1] = data
+        # pdata = sm.collect_gridded_observations_as_time_series(
+        #     plest, 'plume', output_directory, indices=time_indices,
+        #     rlzn_number=rlzn_number+1) # data shape (num_time_points, num_sources, num_receivers)
+        # plume[rlzn_number-1] = pdata
 
-    file_to_save = os.path.join(
+        # vdata = sm.collect_gridded_observations_as_time_series(
+        #     dc, 'velocity', output_directory, indices=time_indices,
+        #     rlzn_number=rlzn_number+1)
+        # velocity[rlzn_number-1] = vdata
+
+        dvdata = sm.collect_gridded_observations_as_time_series(
+            dc, 'delta_velocity', output_directory, indices=time_indices,
+            rlzn_number=rlzn_number+1)
+        delta_velocity[rlzn_number-1] = dvdata
+
+    # pfile_to_save = os.path.join(
+    #     output_directory,
+    #     'plume_data_{}_scenarios.npz'.format(num_scenarios))
+    # np.savez_compressed(pfile_to_save, data=plume)
+
+    # vfile_to_save = os.path.join(
+    #     output_directory,
+    #     'velocity_data_{}_scenarios.npz'.format(num_scenarios))
+    # np.savez_compressed(vfile_to_save, data=velocity)
+
+    dvfile_to_save = os.path.join(
         output_directory,
-        'plume_data_{}_scenarios.npz'.format(num_scenarios))
-    np.savez_compressed(file_to_save, data=plume)
+        'delta_velocity_data_{}_scenarios.npz'.format(num_scenarios))
+    np.savez_compressed(dvfile_to_save, data=delta_velocity)
 
-    # Plot histograms of leaked masses
-    # Brine
-    labelsize = 12
-    indices = num_time_points*np.arange(num_scenarios)
-    fig, axs = plt.subplots(nrows=4, ncols=5, figsize=(18, 10))
-    for ind in range(num_time_points):
-        row = ind//5
-        col = ind%5
-        pic = axs[row, col].hist(np.log10(data_to_populate[indices+ind, 2]), 30, lw=1,
-                                  ec="yellow", fc="green", alpha=0.5)
-        axs[row, col].set_title('t = {} years'.format(time_points[ind]),
-                                fontsize=labelsize+2)
-        axs[row, col].set_xlabel(r'log$_{10}$ mass', fontsize=labelsize+1)
-        axs[row, col].set_xlim(2.5, 7)
-        axs[row, col].set_ylim(top=40)
-    fig.suptitle('Brine mass leaked', fontsize=labelsize+4)
-    fig.tight_layout()
-    fig.savefig(os.path.join(output_directory, 'brine_mass_leaked_hist.png'),
-                dpi=150)
-
-    # CO2
-    fig, axs = plt.subplots(nrows=4, ncols=5, figsize=(18, 10))
-    for ind in range(num_time_points):
-        row = ind//5
-        col = ind%5
-        pic = axs[row, col].hist(np.log10(data_to_populate[indices+ind, 3]), 30, lw=1,
-                                  ec="yellow", fc="green", alpha=0.5)
-        axs[row, col].set_title('t = {} years'.format(time_points[ind]),
-                                fontsize=labelsize+2)
-        axs[row, col].set_xlabel(r'log$_{10}$ mass', fontsize=labelsize+1)
-        if ind > 0:
-            axs[row, col].set_xlim(5.5, 9.5)
-            axs[row, col].set_ylim(top=40)
-    fig.suptitle(r'CO$_2$ mass leaked', fontsize=labelsize+4)
-    fig.tight_layout()
-    fig.savefig(os.path.join(output_directory, 'co2_mass_leaked_hist.png'),
-                dpi=150)
-
-    # Print results for the first 5 scenarios
-    num_dashes = 88
-    print(num_dashes*'-')
-    header_to_print = '  |  '.join([
-        '|  Scenario', 'time', 'n_plumes', 'xextent1', 'zextent1',
-        'xextent2', 'zextent2  |'])
-    line_to_print = '  |  '.join(['|  {: >7} ', '{: >4}', '{: >8}', '{: >7} ', '{: >7} ',
-                                '{: >8}', '{: >8}  |'])
-    for scen_ind, scen in enumerate(scenarios[0:5]):
-        print(header_to_print)
-        print(num_dashes*'-')
+    to_plot = 0
+    if to_plot:
+        # Plot histograms of leaked masses
+        # Brine
+        labelsize = 12
+        indices = num_time_points*np.arange(num_scenarios)
+        fig, axs = plt.subplots(nrows=4, ncols=5, figsize=(18, 10))
         for ind in range(num_time_points):
-            print(line_to_print.format(
-                scen, time_points[ind],
-                out['plest.num_plumes'][scen_ind, ind],
-                plume_metrics['extent1'][scen_ind, ind, 0],
-                plume_metrics['extent2'][scen_ind, ind, 0],
-                plume_metrics['extent1'][scen_ind, ind, 1],
-                plume_metrics['extent2'][scen_ind, ind, 1]))
+            row = ind//5
+            col = ind%5
+            pic = axs[row, col].hist(np.log10(data_to_populate[indices+ind, 2]), 30, lw=1,
+                                      ec="yellow", fc="green", alpha=0.5)
+            axs[row, col].set_title('t = {} years'.format(time_points[ind]),
+                                    fontsize=labelsize+2)
+            axs[row, col].set_xlabel(r'log$_{10}$ mass', fontsize=labelsize+1)
+            axs[row, col].set_xlim(2.5, 7)
+            axs[row, col].set_ylim(top=40)
+        fig.suptitle('Brine mass leaked', fontsize=labelsize+4)
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_directory, 'brine_mass_leaked_hist.png'),
+                    dpi=150)
+
+        # CO2
+        fig, axs = plt.subplots(nrows=4, ncols=5, figsize=(18, 10))
+        for ind in range(num_time_points):
+            row = ind//5
+            col = ind%5
+            pic = axs[row, col].hist(np.log10(data_to_populate[indices+ind, 3]), 30, lw=1,
+                                      ec="yellow", fc="green", alpha=0.5)
+            axs[row, col].set_title('t = {} years'.format(time_points[ind]),
+                                    fontsize=labelsize+2)
+            axs[row, col].set_xlabel(r'log$_{10}$ mass', fontsize=labelsize+1)
+            if ind > 0:
+                axs[row, col].set_xlim(5.5, 9.5)
+                axs[row, col].set_ylim(top=40)
+        fig.suptitle(r'CO$_2$ mass leaked', fontsize=labelsize+4)
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_directory, 'co2_mass_leaked_hist.png'),
+                    dpi=150)
+
+        # Print results for the first 5 scenarios
+        num_dashes = 88
         print(num_dashes*'-')
+        header_to_print = '  |  '.join([
+            '|  Scenario', 'time', 'n_plumes', 'xextent1', 'zextent1',
+            'xextent2', 'zextent2  |'])
+        line_to_print = '  |  '.join(['|  {: >7} ', '{: >4}', '{: >8}', '{: >7} ', '{: >7} ',
+                                    '{: >8}', '{: >8}  |'])
+        for scen_ind, scen in enumerate(scenarios[0:5]):
+            print(header_to_print)
+            print(num_dashes*'-')
+            for ind in range(num_time_points):
+                print(line_to_print.format(
+                    scen, time_points[ind],
+                    out['plest.num_plumes'][scen_ind, ind],
+                    plume_metrics['extent1'][scen_ind, ind, 0],
+                    plume_metrics['extent2'][scen_ind, ind, 0],
+                    plume_metrics['extent1'][scen_ind, ind, 1],
+                    plume_metrics['extent2'][scen_ind, ind, 1]))
+            print(num_dashes*'-')

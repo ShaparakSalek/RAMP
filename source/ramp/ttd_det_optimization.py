@@ -21,7 +21,7 @@ def pareto(det, ttd):
     ranks : numpy array
         List of Pareto rank values for each det/ttd pair
     """
-    thisRank=1
+    thisRank = 1
     ranks = list(np.ones(len(ttd), dtype='int'))
     while True:
         nextRank = []
@@ -31,6 +31,8 @@ def pareto(det, ttd):
                     pass
                 elif ranks[i] < thisRank or ranks[j] < thisRank:
                     pass
+                # if time to detection ttd for plan i is larger than for plan j
+                # and number of scenarios detected for plan i is smaller than
                 elif ttd_j < ttd_i and det[j] > det[i]:
                     nextRank += [i]
                     ranks[i] = thisRank + 1
@@ -46,11 +48,11 @@ def pareto(det, ttd):
 def find_unique_pareto(plans):
     det = np.array([plan[1] for plan in plans])
     ttd = np.array([plan[2] for plan in plans])
-    ranks = pareto(det,ttd)
+    ranks = pareto(det, ttd)
 
     temp, ui = np.unique(np.concatenate([
         det.reshape([len(det), 1]),
-        ttd.reshape([len(ttd),1])],
+        ttd.reshape([len(ttd), 1])],
         axis=1), axis=0, return_index=True)
 
     plansUniquePareto = []
@@ -66,7 +68,7 @@ def single_array_timings(nrmsBool):
 
     Parameters
     ----------
-    nrmsBool : numpy array [n,m,o]
+    nrmsBool : numpy array [n, m, o]
         NRMS boolean detect/no-detect values as a function of array,
         leakage scenario and timestep indexes
     Returns
@@ -79,7 +81,7 @@ def single_array_timings(nrmsBool):
         for iTimeStep in range(nrmsBool.shape[2]):
             det = np.sum(nrmsBool[iArray, :, iTimeStep])
             ttd = iTimeStep
-            plan = (((iArray, iTimeStep),), det, ttd)
+            plan = (((iArray, iTimeStep), ), det, ttd)
             if plan[1] > 0:
                 plans.add(plan)
     return plans
@@ -113,7 +115,7 @@ def additional_array_timings(plans_input, nrmsBool):
                     thisScenarioTTD = []
                     for deployment in plan[0]+((iArray,iTimeStep),):
                         if nrmsBool[iArray, iScenario, deployment[1]]:
-                            thisScenarioTTD += [ deployment[1] ]
+                            thisScenarioTTD += [deployment[1]]
                     if len(thisScenarioTTD) > 0:
                         thisTTD += [np.min(thisScenarioTTD)]
                 if len(thisTTD) > 0:
@@ -126,6 +128,6 @@ def additional_array_timings(plans_input, nrmsBool):
                                 skip = True
                                 break
                         if not skip:
-                            newPlan = (plan[0]+((iArray, iTimeStep),), thisDet, thisTTD)
+                            newPlan = (plan[0]+((iArray, iTimeStep), ), thisDet, thisTTD)
                             plans.add(newPlan)
     return plans

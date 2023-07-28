@@ -84,9 +84,9 @@ if __name__ == "__main__":
     dc.add_par('index', value=scenarios[0],
                discrete_vals=[scenarios, num_scenarios*[1/num_scenarios]])
     # Add gridded observation
-    # dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
-    # dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
-    #                 output_dir=output_directory)
+    dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
+    dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
+                    output_dir=output_directory)
 
     # ------------- Add seismic monitoring technology -------------
     smt = sm.add_component_model_object(
@@ -135,6 +135,21 @@ if __name__ == "__main__":
         output_directory,
         'nrms_optimization_data_{}_scenarios.npz'.format(num_scenarios))
     np.savez_compressed(file_to_save, data=nrms)
+
+    trace_length = 1251
+    seismic_data = np.zeros((num_scenarios, num_time_points,
+                             num_sources, num_receivers, trace_length))
+    for rlzn_number in range(1, num_scenarios+1):
+        print('Realization {}'.format(rlzn_number))
+        data = sm.collect_gridded_observations_as_time_series(
+            dc, 'seismic', output_directory, indices=time_indices,
+            rlzn_number=rlzn_number) # data shape (num_time_points, num_sources, num_receivers, trace_length)
+        seismic_data[rlzn_number-1] = data
+
+    file_to_save = os.path.join(
+        output_directory,
+        'seismic_optimization_data_{}_scenarios.npz'.format(num_scenarios))
+    np.savez_compressed(file_to_save, data=seismic_data)
 
     data_check = 0
     if data_check:

@@ -313,7 +313,6 @@ class SeismicSurveyConfiguration():
                                 '(or both) are not defined.']).format(self.name)
             logging.warning(warn_msg)
 
-
     def create_survey_configuration(self, name, source_indices, receiver_indices):
         """
         Produce new SeismicSurveyConfiguration instance based on subset of sources and
