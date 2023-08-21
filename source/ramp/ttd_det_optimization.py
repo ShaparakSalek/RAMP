@@ -45,6 +45,17 @@ def pareto(det, ttd):
     return np.array(ranks)
 
 
+def scatter2step(x, y):
+    x_step = []
+    y_step = []
+    for i in range(len(x)):
+      x_step += [x[i]]
+      x_step += [x[i]]
+      y_step += [y[i]]
+      y_step += [y[i]]
+    return x_step[1:], y_step[:-1]
+    
+
 def find_unique_pareto(plans):
     det = np.array([plan[1] for plan in plans])
     ttd = np.array([plan[2] for plan in plans])
@@ -95,7 +106,7 @@ def additional_array_timings(plans_input, nrmsBool):
     Parameters
     ----------
     plans_input : list of tuples representing monitoring plans
-    nrmsBool : numpy array [n,m,o]
+    nrmsBool : numpy array [n, m, o]
         NRMS boolean detect/no-detect values as a function of array,
         leakage scenario and timestep indexes
     Returns
@@ -113,7 +124,7 @@ def additional_array_timings(plans_input, nrmsBool):
                 thisTTD = []
                 for iScenario in range(nrmsBool.shape[1]):
                     thisScenarioTTD = []
-                    for deployment in plan[0]+((iArray,iTimeStep),):
+                    for deployment in plan[0]+((iArray, iTimeStep),):
                         if nrmsBool[iArray, iScenario, deployment[1]]:
                             thisScenarioTTD += [deployment[1]]
                     if len(thisScenarioTTD) > 0:
