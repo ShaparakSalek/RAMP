@@ -12,12 +12,12 @@ import matplotlib.pyplot as plt
 import pandas
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.sep.join(['..', '..', 'source']))
+sys.path.insert(0, os.sep.join(['..', '..', 'src']))
 from openiam import SystemModel
 
 sys.path.insert(0, os.sep.join(['..', '..', 'ramp']))
-from ramp.data_container import DataContainer, default_bin_file_reader
-from ramp.plume_estimate import PlumeEstimate
+from ramp import DataContainer, PlumeEstimate
+from ramp.utilities.data_readers import default_bin_file_reader
 
 
 def process_csv_file():
@@ -68,6 +68,7 @@ def process_csv_file():
         data_to_populate[ind*num_time_points:(ind+1)*num_time_points, 3] = co2_mass[indices]
 
     return to_consider, data_to_populate
+
 
 if __name__ == "__main__":
 

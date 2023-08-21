@@ -11,11 +11,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.sep.join(['..', '..', 'source']))
+sys.path.insert(0, os.sep.join(['..', '..', 'src']))
 from openiam import SystemModel
 
 sys.path.insert(0, os.sep.join(['..', '..', 'ramp']))
-from ramp.data_container import DataContainer, default_bin_file_reader
+from ramp import DataContainer
+from ramp.utilities.data_readers import default_bin_file_reader
+
 
 if __name__ == "__main__":
 

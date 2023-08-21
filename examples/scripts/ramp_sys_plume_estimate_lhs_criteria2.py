@@ -11,12 +11,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.sep.join(['..', '..', 'source']))
+sys.path.insert(0, os.sep.join(['..', '..', 'src']))
 from openiam import SystemModel
 
 sys.path.insert(0, os.sep.join(['..', '..', 'ramp']))
-from ramp.data_container import DataContainer, default_bin_file_reader
-from ramp.plume_estimate import PlumeEstimate
+from ramp import DataContainer, PlumeEstimate
+from ramp.utilities.data_readers import default_bin_file_reader
+
 
 if __name__ == "__main__":
 
@@ -53,7 +54,8 @@ if __name__ == "__main__":
         data_setup[ind] = {'folder': os.path.join('vp_sim{:04}'.format(ind),
                                                   'model')}
         for t_ind in range(1, num_time_points+1):
-            data_setup[ind]['t{}'.format(t_ind)] = 'model_sim{:04}_t{}.bin'.format(ind, t_ind*10)
+            data_setup[ind]['t{}'.format(t_ind)] = 'model_sim{:04}_t{}.bin'.format(
+                ind, t_ind*10)
     baseline = True
 
     # ------------- Create system model -------------

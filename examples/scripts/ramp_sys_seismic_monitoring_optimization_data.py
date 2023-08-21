@@ -11,14 +11,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.sep.join(['..', '..', 'source']))
+sys.path.insert(0, os.sep.join(['..', '..', 'src']))
 from openiam import SystemModel
 
 sys.path.insert(0, os.sep.join(['..', '..', 'ramp']))
-from ramp.data_container import default_bin_file_reader
-from ramp.seismic_data_container import SeismicDataContainer
-from ramp.seismic_configuration import SeismicSurveyConfiguration
-from ramp.seismic_monitoring import SeismicMonitoring
+from ramp.utilities.data_readers import default_bin_file_reader
+from ramp import SeismicDataContainer, SeismicSurveyConfiguration, SeismicMonitoring
+
 
 if __name__ == "__main__":
     # Define keyword arguments of the system model
