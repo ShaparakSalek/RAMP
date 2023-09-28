@@ -7,7 +7,7 @@
 Run the script using Python:
 
 ```
-python seis_sensitivity_optimization.py [--config path_to_custom_yaml_file.yaml]
+python sensitivity_optimization.py [--config path_to_custom_yaml_file.yaml]
 ```
 
 ### Parameters
