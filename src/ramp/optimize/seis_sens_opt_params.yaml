@@ -1,0 +1,16 @@
+nx: 1467  # Number of grid points in the x direction
+nz: 335   # Number of grid points in the z direction
+dz: 7.5  # Depth interval (also applies to dx)
+dx: 7.5  # Horizontal interval
+ns: 146  # Number of sources
+nr: 1467  # Number of receivers
+dr: 7.5  # Receiver interval (m)
+ds: 75.0  # Source interval (m)
+t1: 78  # Year when fault leakage begins
+years: [80, 85, 90, 95, 100, 125]  # List of years for monitoring
+senMax: [10000000.0, 10000000.0, 10000000.0, 1000000000.0]  # Maximum sensitivity values
+thresholds: [0.2, 0.6]  # Threshold values for sensitivity
+ks: 4  # ks parameter value
+kr: 4  # kr parameter value
+datadir: /Users/tian7/data/NRAP/data_use-case2/  # Directory path for data
+outpre: ./  # Root directory path for output

@@ -18,13 +18,22 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.ticker as mticker
 from matplotlib.colors import LinearSegmentedColormap
-from ipywidgets import interact, IntSlider, HBox, IntText, BoundedIntText
-import ipywidgets as widgets
+# from ipywidgets import interact, IntSlider, HBox, IntText, BoundedIntText
+# import ipywidgets as widgets
+import yaml
+import argparse
 mpl.rcParams.update({'font.size': 20})
 DEBUG = False
 
+
+
 # -------------------------------
 
+
+def read_yaml_parameters(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params
 
 def create_cmap():
     '''
@@ -437,21 +446,29 @@ class MonitoringDesignSensitivity2D:
 
 # ----------------------------------------
 if __name__ == "__main__":
-    nz = 335
-    nx = 1467
-    dz = dx = 7.5  # m
-    ns = 146
-    nr = 1467
-    dr = 7.5     # Receiver interval (m)
-    ds = 75.0    # source interval (m)
-    t1 = 78      # the year (int) when fault leakage begins
-    years = [str(y) for y in [80, 85, 90, 95, 100, 125]]
-    senMax = [1e7, 1e7, 1e7, 1e9]
-    thresholds = [0.2, 0.6]
-    ks = 4; kr = 4
-
-    datadir = '/Users/tian7/data/NRAP/data_use-case2/'
-    outpre='/Users/tian7/out_put/'
+    # Command-line argument parsing to get the YAML configuration file
+    parser = argparse.ArgumentParser(description='Seismic Design Optimization Script')
+    parser.add_argument('--config', type=str, default='seis_sens_opt_params.yaml', help='Path to the configuration YAML file.')
+    args = parser.parse_args()
+    yaml_path = args.config
+    parameters = read_yaml_parameters(yaml_path)
+    nx = parameters['nx']
+    nz = parameters['nz']
+    dz = parameters['dz']
+    dx = parameters['dx']
+    ns = parameters['ns']
+    nr = parameters['nr']
+    dr = parameters['dr']
+    ds = parameters['ds']
+    t1 = parameters['t1']
+    years0 = parameters['years']
+    senMax = parameters['senMax']
+    thresholds = parameters['thresholds']
+    ks = parameters['ks']
+    kr = parameters['kr']
+    datadir = parameters['datadir']
+    outpre = parameters['outpre']
+    years = [str(y) for y in years0]
     seis = MonitoringDesignSensitivity2D(nx,nz,dx,dz,ns,nr,ds,dr,years,t1,thresholds,ks,kr)
 
     # plot velocity, density and plume models (images)
@@ -463,25 +480,6 @@ if __name__ == "__main__":
     fnames = glob.glob(modeldir + '*.bin')
     for fname in fnames:
         seis.plot_model_image(fname, out_dir)
-
-    # plot some sensitivity profiles
-    out_dir = outpre + '/sensitivity_plots/'
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    k = 0
-    for wf in seis.wavefield:
-        for ps in seis.vpvs:
-            for iSrc in range(1, seis.nsrc, seis.nsrc//2-1):
-                print('plot sensitivity', wf, ps, 'Source#', iSrc)
-                seis.plot_sensitivity_source(datadir, out_dir, wf, ps, iSrc, False, senMax[k])
-            k += 1
-
-    sens_max = seis.find_max_sensitivity_source(datadir)
-    out_dir = outpre + 'max_sensitivity/'
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    seis.plot_max_sensitivity_component(out_dir, sens_max, False, 1e4, 1e10)
-    seis.plot_max_sensitivity_year(out_dir, sens_max, True, 1e4, 1e10)
 
     # plot sensitivity images per component
     out_dir = outpre + '/sensitivity_images/'
