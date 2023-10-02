@@ -44,10 +44,10 @@ class InSituMeasurements(MonitoringTechnology):
 
         # Add type attribute
         self.class_type = 'InSituMeasurements'
-        # self.model is self.collect_data
+        # self.model is self.process_data
         # might need accumulators to keep track of detection time
 
-    def collect_data(self, p, data):
+    def process_data(self, p, data):
         """
 
 
