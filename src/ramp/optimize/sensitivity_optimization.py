@@ -322,14 +322,17 @@ class MonitoringDesignSensitivity2D:
 
         '''
         out = sens >= threshold
+        
+        sens_sel=sens*out
         # increase source interval by a factor of ks and receiver interval by kr
         out = out[::self.opt_src_sep, ::self.opt_rec_sep]
+        sens_sel = sens_sel[::self.opt_src_sep, ::self.opt_rec_sep]
 
         m, n = out.shape
         opt = np.sum(out)
         area = 100 * opt / (m * n)
         
-        return out, area
+        return out, area,np.sum(sens_sel)
 
     def find_max_num_sources(self,src_rec):
         ''' find maximum number of sources for all time steps
@@ -441,9 +444,6 @@ class MonitoringDesignSensitivity2D:
 
 
 
-
-
-
 # ----------------------------------------
 if __name__ == "__main__":
     # Command-line argument parsing to get the YAML configuration file
@@ -452,6 +452,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     yaml_path = args.config
     parameters = read_yaml_parameters(yaml_path)
+    # read in parameters from YAML file
     nx = parameters['nx']
     nz = parameters['nz']
     dz = parameters['dz']
@@ -469,6 +470,7 @@ if __name__ == "__main__":
     datadir = parameters['datadir']
     outpre = parameters['outpre']
     years = [str(y) for y in years0]
+    # create a sensitivity object
     seis = MonitoringDesignSensitivity2D(nx,nz,dx,dz,ns,nr,ds,dr,years,t1,thresholds,ks,kr)
 
     # plot velocity, density and plume models (images)
@@ -494,13 +496,13 @@ if __name__ == "__main__":
     for wf in seis.wavefield:
         for ps in seis.vpvs:
             sens2d = seis.load_sensitivity_data(datadir, seis.timestamps[-1], wf, ps)
-            design1, _ = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1])
+            design1, _,sen_sel = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1])
             ns_max = seis.find_max_num_sources(design1)
             for yr in seis.timestamps:
                 print('Optimal design', yr+'y', wf, ps)
                 sens2d = seis.load_sensitivity_data(datadir,yr,wf,ps)
-                _, area[0] = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0])
-                design1, area[1] = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1])
+                _, area[0],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0])
+                design1, area[1],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1])
                 seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
                 design2 = seis.plot_optimal_design(design1,modeldir,optimal_dir,wf,ps,yr,ns_max)
                 fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
@@ -508,6 +510,30 @@ if __name__ == "__main__":
                     for line in design2:
                         fout.write(str(line) + '\n')
 
+
+    sens_dtc_dir = outpre + '/sens_dtc/'
+    if not os.path.exists(sens_dtc_dir):
+        os.makedirs(sens_dtc_dir)
+    
+    plt.figure(figsize=(20,15))
+    for yr in seis.timestamps[:]:
+        plt.subplot(2,3,seis.timestamps.index(yr)+1)
+        for wf in seis.wavefield:
+            for ps in seis.vpvs:
+                sens2d = seis.load_sensitivity_data(datadir, yr, wf, ps)
+                arae_all=[]
+                sen_all=[]
+                for th in 1/np.arange(1,10):
+                    design, area,sen_sel = seis.find_optimal_seismic_arrays(sens2d,th)
+                    arae_all.append(area)
+                    sen_all.append(sen_sel)
+                plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
+        plt.xlabel('data to collect (%)')
+        plt.ylabel('Total Sensitivity')
+        plt.title('{} yr'.format(yr))
+        plt.legend()
+
+    plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
     print('Done')
 
 
