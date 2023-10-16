@@ -52,7 +52,7 @@ def scatter2step(x, y):
       y_step += [y[i]]
       y_step += [y[i]]
     return x_step[1:], y_step[:-1]
-    
+
 
 def find_unique_pareto(plans):
     det = np.array([plan[1] for plan in plans])
@@ -69,6 +69,21 @@ def find_unique_pareto(plans):
         if i in ui:
             plansUniquePareto += [list(plans)[i]]
     return plansUniquePareto
+
+
+def find_different_density_same_timestep(plans,arrays):
+    selected = set()
+    for plan in plans:
+      if len(plan[0])>0:
+        for iDeployment in range(len(plan[0])):
+          for jDeployment in range(len(plan[0])):
+            if iDeployment==jDeployment: continue
+            if plan[0][iDeployment][1]!=plan[0][jDeployment][1]: continue
+            dens1 = np.abs(arrays[plan[0][iDeployment][0]]['receivers'][0]-arrays[plan[0][iDeployment][0]]['receivers'][1])
+            dens2 = np.abs(arrays[plan[0][jDeployment][0]]['receivers'][0]-arrays[plan[0][jDeployment][0]]['receivers'][1])
+            if arrays[plan[0][iDeployment][0]]['receivers']==arrays[plan[0][jDeployment][0]]['receivers']: selected.add(plan)
+            elif dens1!=dens2: selected.add(plan)
+    return selected
 
 
 def single_array_timings(nrmsBool):
@@ -88,7 +103,7 @@ def single_array_timings(nrmsBool):
     plans = set()
     for iArray in range(nrmsBool.shape[0]):
         for iTimeStep in range(nrmsBool.shape[2]):
-            det = np.sum(nrmsBool[iArray, :, iTimeStep])
+            det = int(np.sum(nrmsBool[iArray, :, iTimeStep]))
             ttd = iTimeStep
             plan = (((iArray, iTimeStep),), det, ttd)
             if plan[1] > 0:
@@ -130,7 +145,7 @@ def additional_array_timings(plans_input, nrmsBool):
                 if len(thisTTD) > 0:
                     thisTTD = np.mean(thisTTD)
                     if np.any(nrmsBool[iArray, :, iTimeStep]) or thisTTD < plan[2]:
-                        thisDet = np.sum(nrmsBool[iArray, :, iTimeStep])
+                        thisDet = int(np.sum(nrmsBool[iArray, :, iTimeStep]))
                         skip = False
                         for jPlan in plans_input:
                             if jPlan[1] >= thisDet and jPlan[2] <= thisTTD:
