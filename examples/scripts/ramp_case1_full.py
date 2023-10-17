@@ -114,7 +114,7 @@ to_delete = True  # False: do not delete archive, True: delete archives
 # ====================================
 # =========== End Setup ==============
 # ====================================
-          
+
 if __name__ == "__main__":
     # Start of script from download_folder_content_on_edx.py
     # Use your API-Key
@@ -180,381 +180,378 @@ if __name__ == "__main__":
     elif data_case == 2:
         output_directory = os.sep.join([inputs['directory_velocity_data']])
 
-if inputs['download_data']:
-    # ====================================
-    # =========== Setup Step 5 ===========
-    # ====================================
-    # Setup whether archives will be deleted after unzipping
-    # to_delete = True  # False: do not delete archive, True: delete archives
+    if inputs['download_data']:
+        # ====================================
+        # =========== Setup Step 5 ===========
+        # ====================================
+        # Setup whether archives will be deleted after unzipping
+        # to_delete = True  # False: do not delete archive, True: delete archives
 
-    data = {
-        "workspace_id": workspace_id,
-        "folder_id": folder_id,
-        # "folder_id": ['7c3e598c-3486-468d-9d5b-9eee6da7637a', '4d932b54-57be-404a-b38e-6e9caa6e3b23']  list of folders format
-        # "only_show_type": 'folders' # Uncomment this line if you wish to only return folders
-        # "only_show_type": 'resources' # Uncomment this line if you wish to only return resources
-    }
+        data = {
+            "workspace_id": workspace_id,
+            "folder_id": folder_id,
+            # "folder_id": ['7c3e598c-3486-468d-9d5b-9eee6da7637a', '4d932b54-57be-404a-b38e-6e9caa6e3b23']  list of folders format
+            # "only_show_type": 'folders' # Uncomment this line if you wish to only return folders
+            # "only_show_type": 'resources' # Uncomment this line if you wish to only return resources
+        }
 
-    # The following link stays the same even for different workspaces
-    # This is an URL to API endpoint
-    url = 'https://edx.netl.doe.gov/api/3/action/folder_resources'
+        # The following link stays the same even for different workspaces
+        # This is an URL to API endpoint
+        url = 'https://edx.netl.doe.gov/api/3/action/folder_resources'
 
-    # Get data associated with folder
-    r = requests.post(
-        url, # URL to API endpoint
-        headers=headers, # Headers dictionary
-        data=data, # Dictionary of data params
-    )
+        # Get data associated with folder
+        r = requests.post(
+            url, # URL to API endpoint
+            headers=headers, # Headers dictionary
+            data=data, # Dictionary of data params
+        )
 
-    # Convert data into dictionary format
-    json_data = r.json()
-    #print(json_data)
-    #print(json_data.keys())
+        # Convert data into dictionary format
+        json_data = r.json()
+        #print(json_data)
+        #print(json_data.keys())
 
-    # Get folder resources: files names, their urls, etc.
-    resources = json_data['result']['resources']
+        # Get folder resources: files names, their urls, etc.
+        resources = json_data['result']['resources']
 
-    # Print number of resources to see expected number of 986 resources
-    print('Total number of resources', len(resources), '\n')
-    # for res in resources:
-    #     print(res['name'])
+        # Print number of resources to see expected number of 986 resources
+        print('Total number of resources', len(resources), '\n')
+        # for res in resources:
+        #     print(res['name'])
 
-    # Get URL of files to be downloaded
-    urls = {}
-    # Go over all resources in the folder
-    for res in resources:
-        if data_case == 1:
-            scen_ind = int(res['name'][8:12])  # valid for seismic_data
-        elif data_case == 2:
-            scen_ind = int(res['name'][6:10])  # valid for vp_model
-        if scen_ind in scenario_indices:
-            urls[scen_ind] = res['url']
+        # Get URL of files to be downloaded
+        urls = {}
+        # Go over all resources in the folder
+        for res in resources:
+            if data_case == 1:
+                scen_ind = int(res['name'][8:12])  # valid for seismic_data
+            elif data_case == 2:
+                scen_ind = int(res['name'][6:10])  # valid for vp_model
+            if scen_ind in scenario_indices:
+                urls[scen_ind] = res['url']
 
-    # Download files
-    for scen_ind, url_link in urls.items():
-        print(f'scen_ind: {scen_ind}')
-        if os.path.exists(os.path.join(output_directory, base_name.format(scen_ind)+'.zip')) or \
-                os.path.exists(os.path.join(output_directory, base_name.format(scen_ind))):
-            print('Skipping file', base_name.format(scen_ind))
-            continue
+        # Download files
+        for scen_ind, url_link in urls.items():
+            print(f'scen_ind: {scen_ind}')
+            if os.path.exists(os.path.join(output_directory, base_name.format(scen_ind)+'.zip')) or \
+                    os.path.exists(os.path.join(output_directory, base_name.format(scen_ind))):
+                print('Skipping file', base_name.format(scen_ind))
+                continue
 
-        print('Downloading file:', file_name.format(scen_ind))
-        print('---')
+            print('Downloading file:', file_name.format(scen_ind))
+            print('---')
 
-        # print("Getting resource...")
-        r = requests.get(url_link, headers=headers)
+            # print("Getting resource...")
+            r = requests.get(url_link, headers=headers)
 
-        fname = ''
+            fname = ''
 
-        if "Content-Disposition" in r.headers.keys():
-            fname = re.findall("filename=(.+)", r.headers["Content-Disposition"])[0]
-        else:
-            fname = url_link.split("/")[-1]
+            if "Content-Disposition" in r.headers.keys():
+                fname = re.findall("filename=(.+)", r.headers["Content-Disposition"])[0]
+            else:
+                fname = url_link.split("/")[-1]
 
-        if fname.startswith('"'):
-            fname = fname[1:]
+            if fname.startswith('"'):
+                fname = fname[1:]
 
-        if fname.endswith('"'):
-            fname = fname[:-1]
+            if fname.endswith('"'):
+                fname = fname[:-1]
 
-        with open(os.sep.join([output_directory, fname]), 'wb') as file:
-            file.write(r.content)
+            with open(os.sep.join([output_directory, fname]), 'wb') as file:
+                file.write(r.content)
 
-    # Unzip all archives if user has requested it
-    if to_unzip:
-        for scen_ind in urls:
-            print('Unzipping {} file ...'.format(file_name.format(scen_ind)))
-            path_name = os.sep.join([output_directory, file_name.format(scen_ind)])
-            try:
-                with zipfile.ZipFile(path_name, 'r') as zip_ref:
-                    folder_to_extract = os.sep.join([output_directory, base_name.format(scen_ind)])
-                    try:
-                        os.mkdir(folder_to_extract)
-                        zip_ref.extractall(folder_to_extract)
-                    except FileExistsError:
-                        pass
+        # Unzip all archives if user has requested it
+        if to_unzip:
+            for scen_ind in urls:
+                print('Unzipping {} file ...'.format(file_name.format(scen_ind)))
+                path_name = os.sep.join([output_directory, file_name.format(scen_ind)])
+                try:
+                    with zipfile.ZipFile(path_name, 'r') as zip_ref:
+                        folder_to_extract = os.sep.join([output_directory, base_name.format(scen_ind)])
+                        try:
+                            os.mkdir(folder_to_extract)
+                            zip_ref.extractall(folder_to_extract)
+                        except FileExistsError:
+                            pass
 
-                if to_delete:
-                    print('Removing {} file ...'.format(file_name.format(scen_ind)))
-                    print('---')
-                    os.remove(path_name)
-            except:
-                pass
+                    if to_delete:
+                        print('Removing {} file ...'.format(file_name.format(scen_ind)))
+                        print('---')
+                        os.remove(path_name)
+                except:
+                    pass
 
-    # Check downloads for complete data
-    # Attempt second download for missing/incomplete files
-    incomplete = []
-    for scen_ind in scenario_indices:
-        files = os.listdir(os.sep.join([output_directory, base_name.format(scen_ind), 'data']))
-        if len(files) != 20: # could check for specific files if necessary
-            incomplete.append(scen_ind)
-    print(f'incomplete scenarios (1st round): {incomplete}')
+        # Check downloads for complete data
+        # Attempt second download for missing/incomplete files
+        incomplete = []
+        for scen_ind in scenario_indices:
+            files = os.listdir(os.sep.join([output_directory, base_name.format(scen_ind), 'data']))
+            if len(files) != 20: # could check for specific files if necessary
+                incomplete.append(scen_ind)
+        print(f'incomplete scenarios (1st round): {incomplete}')
     
-    # Delete incomplete data folders
-    for scen_ind in incomplete:
-        files = os.sep.join([output_directory, base_name.format(scen_ind)])
-        if os.path.isdir(files):
-            shutil.rmtree(files)
+        # Delete incomplete data folders
+        for scen_ind in incomplete:
+            files = os.sep.join([output_directory, base_name.format(scen_ind)])
+            if os.path.isdir(files):
+                shutil.rmtree(files)
     
-    # Run download script again on deleted files
-    # Get URL of files to be downloaded
-    urls = {}
-    # Go over all resources in the folder
-    for res in resources:
-        if data_case == 1:
-            scen_ind = int(res['name'][8:12])  # valid for seismic_data
-        elif data_case == 2:
-            scen_ind = int(res['name'][6:10])  # valid for vp_model
-        if scen_ind in incomplete: ### Only change to download script is list of files ###
-            urls[scen_ind] = res['url']
+        # Run download script again on deleted files
+        # Get URL of files to be downloaded
+        urls = {}
+        # Go over all resources in the folder
+        for res in resources:
+            if data_case == 1:
+                scen_ind = int(res['name'][8:12])  # valid for seismic_data
+            elif data_case == 2:
+                scen_ind = int(res['name'][6:10])  # valid for vp_model
+            if scen_ind in incomplete: ### Only change to download script is list of files ###
+                urls[scen_ind] = res['url']
     
-    # Download files
-    for scen_ind, url_link in urls.items():
-        print(f'scen_ind: {scen_ind}')
-        if os.path.exists(os.path.join(output_directory, base_name.format(scen_ind)+'.zip')) or \
-                os.path.exists(os.path.join(output_directory, base_name.format(scen_ind))):
-            print('Skipping file', base_name.format(scen_ind))
-            continue
+        # Download files
+        for scen_ind, url_link in urls.items():
+            print(f'scen_ind: {scen_ind}')
+            if os.path.exists(os.path.join(output_directory, base_name.format(scen_ind)+'.zip')) or \
+                    os.path.exists(os.path.join(output_directory, base_name.format(scen_ind))):
+                print('Skipping file', base_name.format(scen_ind))
+                continue
 
-        print('Re-downloading file:', file_name.format(scen_ind))
-        print('---')
+            print('Re-downloading file:', file_name.format(scen_ind))
+            print('---')
 
-        # print("Getting resource...")
-        r = requests.get(url_link, headers=headers)
+            # print("Getting resource...")
+            r = requests.get(url_link, headers=headers)
 
-        fname = ''
+            fname = ''
 
-        if "Content-Disposition" in r.headers.keys():
-            fname = re.findall("filename=(.+)", r.headers["Content-Disposition"])[0]
-        else:
-            fname = url_link.split("/")[-1]
+            if "Content-Disposition" in r.headers.keys():
+                fname = re.findall("filename=(.+)", r.headers["Content-Disposition"])[0]
+            else:
+                fname = url_link.split("/")[-1]
 
-        if fname.startswith('"'):
-            fname = fname[1:]
+            if fname.startswith('"'):
+                fname = fname[1:]
 
-        if fname.endswith('"'):
-            fname = fname[:-1]
+            if fname.endswith('"'):
+                fname = fname[:-1]
 
-        with open(os.sep.join([output_directory, fname]), 'wb') as file:
-            file.write(r.content)
+            with open(os.sep.join([output_directory, fname]), 'wb') as file:
+                file.write(r.content)
 
-    # Unzip all archives if user has requested it
-    if to_unzip:
-        for scen_ind in urls:
-            print('Unzipping {} file ...'.format(file_name.format(scen_ind)))
-            path_name = os.sep.join([output_directory, file_name.format(scen_ind)])
-            try:
-                with zipfile.ZipFile(path_name, 'r') as zip_ref:
-                    folder_to_extract = os.sep.join([output_directory, base_name.format(scen_ind)])
-                    try:
-                        os.mkdir(folder_to_extract)
-                        zip_ref.extractall(folder_to_extract)
-                    except FileExistsError:
-                        pass
+        # Unzip all archives if user has requested it
+        if to_unzip:
+            for scen_ind in urls:
+                print('Unzipping {} file ...'.format(file_name.format(scen_ind)))
+                path_name = os.sep.join([output_directory, file_name.format(scen_ind)])
+                try:
+                    with zipfile.ZipFile(path_name, 'r') as zip_ref:
+                        folder_to_extract = os.sep.join([output_directory, base_name.format(scen_ind)])
+                        try:
+                            os.mkdir(folder_to_extract)
+                            zip_ref.extractall(folder_to_extract)
+                        except FileExistsError:
+                            pass
 
-                if to_delete:
-                    print('Removing {} file ...'.format(file_name.format(scen_ind)))
-                    print('---')
-                    os.remove(path_name)
-            except:
-                pass
+                    if to_delete:
+                        print('Removing {} file ...'.format(file_name.format(scen_ind)))
+                        print('---')
+                        os.remove(path_name)
+                except:
+                    pass
             
-if inputs['download_data'] or inputs['run_optimization']:
-    # Check 2nd round of downloads for incomplete data to exclude from NRMS calculations
-    excluded = []
-    for scen_ind in scenario_indices:
-        files = os.listdir(os.sep.join([output_directory, base_name.format(scen_ind), 'data']))
-        if len(files) != 20: # could check for specific files if necessary
-            excluded.append(scen_ind)
-    print(excluded)
+    if inputs['download_data'] or inputs['run_optimization']:
+        # Check 2nd round of downloads for incomplete data to exclude from NRMS calculations
+        excluded = []
+        for scen_ind in scenario_indices:
+            files = os.listdir(os.sep.join([output_directory, base_name.format(scen_ind), 'data']))
+            if len(files) != 20: # could check for specific files if necessary
+                excluded.append(scen_ind)
+        print(excluded)
     
-    if data_case == 1:
-        #Start of code from ramp_sys_seismic_monitoring_optimization_data.py
-        # Define keyword arguments of the system model
-        time_points = 10*np.arange(1, 21)
-        time_array = 365.25*time_points
-        sm_model_kwargs = {'time_array': time_array}   # time is given in days
+        if data_case == 1:
+            #Start of code from ramp_sys_seismic_monitoring_optimization_data.py
+            # Define keyword arguments of the system model
+            time_points = 10*np.arange(1, 21)
+            time_array = 365.25*time_points
+            sm_model_kwargs = {'time_array': time_array}   # time is given in days
 
-        # Setup required information for data container before creating one
-        obs_name = 'seismic'
-        #data_directory = os.path.join('..', '..', 'data', 'user', 'seismic')
-        #output_directory = os.path.join('..', '..', 'examples', 'user', 'output',
-        #                                'ramp_sys_seismic_monitoring_optimization_data')
-        data_directory = inputs['directory_seismic_data']
-        output_directory = inputs['directory_nrms_data']
-        if not os.path.exists(output_directory):
-            os.mkdir(output_directory)
-        data_reader = default_bin_file_reader
-        data_reader_kwargs = {'data_shape': (1251, 101, 9),
-                            'move_axis_destination': [-1, -2, -3]}
+            # Setup required information for data container before creating one
+            obs_name = 'seismic'
+            #data_directory = os.path.join('..', '..', 'data', 'user', 'seismic')
+            #output_directory = os.path.join('..', '..', 'examples', 'user', 'output',
+            #                                'ramp_sys_seismic_monitoring_optimization_data')
+            data_directory = inputs['directory_seismic_data']
+            output_directory = inputs['directory_nrms_data']
+            if not os.path.exists(output_directory):
+                os.mkdir(output_directory)
+            data_reader = default_bin_file_reader
+            data_reader_kwargs = {'data_shape': (1251, 101, 9),
+                                'move_axis_destination': [-1, -2, -3]}
 
-        num_time_points = len(time_points)
-        # excluded = [37, 118, 136, 150, 182, 245]  # 6 scenarios
-        # excluded = [37, 118, 136, 150, 182, 245, 397, 449, 456, 457, 468, 469, 498, 499, 500, 590, 598, 686, 749, 831, 832, 833, 834, 835, 836, 837, 839, 840, 842, 843, 839, 863, 935, 937, 970, 991]  # 17 scenarios
-        #job 477 = 468, maybe 467 with exclusions # 469?
-        #job 508 = 499, maybe 498, 500?
+            num_time_points = len(time_points)
+            # excluded = [37, 118, 136, 150, 182, 245]  # 6 scenarios
+            # excluded = [37, 118, 136, 150, 182, 245, 397, 449, 456, 457, 468, 469, 498, 499, 500, 590, 598, 686, 749, 831, 832, 833, 834, 835, 836, 837, 839, 840, 842, 843, 839, 863, 935, 937, 970, 991]  # 17 scenarios
+            #job 477 = 468, maybe 467 with exclusions # 469?
+            #job 508 = 499, maybe 498, 500?
 
-        scenarios = set(scenario_indices).difference(excluded)
-        scenarios = list(scenarios)
-        num_scenarios = len(scenarios)
-        family = 'seismic'
-        data_setup = {}
-        for scen in scenarios:
-            data_setup[scen] = {'folder': os.path.join('data_sim{:04}'.format(scen),
-                                                    'data')}
-            for t_ind, tp in enumerate(time_points):
-                data_setup[scen]['t{}'.format(t_ind+1)] = 'data_sim{:04}_t{}.bin'.format(scen, tp)
-        baseline = True
+            scenarios = set(scenario_indices).difference(excluded)
+            scenarios = list(scenarios)
+            num_scenarios = len(scenarios)
+            family = 'seismic'
+            data_setup = {}
+            for scen in scenarios:
+                data_setup[scen] = {'folder': os.path.join('data_sim{:04}'.format(scen), 'data')}
+                for t_ind, tp in enumerate(time_points):
+                    data_setup[scen]['t{}'.format(t_ind+1)] = 'data_sim{:04}_t{}.bin'.format(scen, tp)
+            baseline = True
 
-        '''# Define coordinates of sources
-        num_sources = 9
-        sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
-                        np.zeros(num_sources),
-                        np.zeros(num_sources)]
-
-        # Define coordinates of receivers
-        num_receivers = 101
-        receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
-                        np.zeros(num_receivers),
-                        np.zeros(num_receivers)]'''
-
-        if 'sources' in inputs.keys():
-            num_sources = len(inputs['sources'])
-            sources = np.c_[inputs['sources'],
-                            np.zeros(num_sources),
-                            np.zeros(num_sources)]
-        else:
-            num_sources = inputs['sourcesNum']
-            min_sources = inputs['sourcesMin']
-            max_sources = inputs['sourcesMax']
-            sources = np.c_[np.linspace(min_sources,max_sources,num=num_sources),
+            '''# Define coordinates of sources
+            num_sources = 9
+            sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
                             np.zeros(num_sources),
                             np.zeros(num_sources)]
 
-        if 'receivers' in inputs.keys():
-            num_receivers = len(inputs['receivers'])
-            receivers = np.c_[inputs['receivers'],
-                              np.zeros(num_receivers),
-                              np.zeros(num_receivers)]
-        else:
-            num_receivers = inputs['receiversNum']
-            min_receivers = inputs['receiversMin']
-            max_receivers = inputs['receiversMax']
-            receivers = np.c_[np.linspace(min_receivers,max_receivers,num=num_receivers),
-                              np.zeros(num_receivers),
-                              np.zeros(num_receivers)]
+            # Define coordinates of receivers
+            num_receivers = 101
+            receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
+                            np.zeros(num_receivers),
+                            np.zeros(num_receivers)]'''
 
-if inputs['download_data']:
-        # Create survey with defined coordinates
-        survey_config = SeismicSurveyConfiguration(sources, receivers, name='Test Survey')
+            if 'sources' in inputs.keys():
+                num_sources = len(inputs['sources'])
+                sources = np.c_[inputs['sources'],
+                                np.zeros(num_sources),
+                                np.zeros(num_sources)]
+            else:
+                num_sources = inputs['sourcesNum']
+                min_sources = inputs['sourcesMin']
+                max_sources = inputs['sourcesMax']
+                sources = np.c_[np.linspace(min_sources,max_sources,num=num_sources),
+                                np.zeros(num_sources),
+                                np.zeros(num_sources)]
 
-        # ------------- Create system model -------------
-        sm = SystemModel(model_kwargs=sm_model_kwargs)
+            if 'receivers' in inputs.keys():
+                num_receivers = len(inputs['receivers'])
+                receivers = np.c_[inputs['receivers'],
+                                  np.zeros(num_receivers),
+                                  np.zeros(num_receivers)]
+            else:
+                num_receivers = inputs['receiversNum']
+                min_receivers = inputs['receiversMin']
+                max_receivers = inputs['receiversMax']
+                receivers = np.c_[np.linspace(min_receivers,max_receivers,num=num_receivers),
+                                  np.zeros(num_receivers),
+                                  np.zeros(num_receivers)]
 
-        # ------------- Add data container -------------
-        dc = sm.add_component_model_object(
-            SeismicDataContainer(name='dc', parent=sm, survey_config=survey_config,
-                                total_duration=inputs['seismic_total_duration'],
-                                sampling_interval=inputs['seismic_sampling_interval'],
-                                family=family, obs_name=obs_name,
-                                data_directory=data_directory, data_setup=data_setup,
-                                time_points=time_points, baseline=baseline,
-                                data_reader=data_reader,
-                                data_reader_kwargs=data_reader_kwargs,
-                                presetup=True))
-        # Add parameters of the container
-        dc.add_par('index', value=scenarios[0],
-                discrete_vals=[scenarios, num_scenarios*[1/num_scenarios]])
-        # Add gridded observation
-        # dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
-        # dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
-        #                 output_dir=output_directory)
+    if inputs['download_data']:
+            # Create survey with defined coordinates
+            survey_config = SeismicSurveyConfiguration(sources, receivers, name='Test Survey')
 
-        # ------------- Add seismic monitoring technology -------------
-        smt = sm.add_component_model_object(
-            SeismicMonitoring(name='smt', parent=sm, survey_config=survey_config,
-                            time_points=time_points))
-        # Add keyword arguments linked to the seismic data container outputs
-        smt.add_kwarg_linked_to_obs('data', dc.linkobs['seismic'], obs_type='grid')
-        smt.add_kwarg_linked_to_obs('baseline', dc.linkobs['baseline_seismic'], obs_type='grid')
-        # Add gridded observation
-        smt.add_grid_obs('NRMS', constr_type='matrix', output_dir=output_directory)
-        # Add scalar observations
-        for nm in ['ave_NRMS', 'max_NRMS', 'min_NRMS']:
-            smt.add_obs(nm)
-            smt.add_obs_to_be_linked(nm)
+            # ------------- Create system model -------------
+            sm = SystemModel(model_kwargs=sm_model_kwargs)
 
-        print('--------------------------------')
-        print('Stochastic simulation started...')
-        print('--------------------------------')
-        print('Number of scenarios: {}'.format(num_scenarios))
-        # Create sampleset varying over scenarios: this is not a typical setup
-        # We want to make sure scenarios are not repeated.
-        samples = np.array(scenarios).reshape(num_scenarios, 1)
-        s = sm.create_sampleset(samples)
+            # ------------- Add data container -------------
+            dc = sm.add_component_model_object(
+                SeismicDataContainer(name='dc', parent=sm, survey_config=survey_config,
+                                    total_duration=inputs['seismic_total_duration'],
+                                    sampling_interval=inputs['seismic_sampling_interval'],
+                                    family=family, obs_name=obs_name,
+                                    data_directory=data_directory, data_setup=data_setup,
+                                    time_points=time_points, baseline=baseline,
+                                    data_reader=data_reader,
+                                    data_reader_kwargs=data_reader_kwargs,
+                                    presetup=True))
+            # Add parameters of the container
+            dc.add_par('index', value=scenarios[0],
+                    discrete_vals=[scenarios, num_scenarios*[1/num_scenarios]])
+            # Add gridded observation
+            # dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
+            # dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
+            #                 output_dir=output_directory)
 
-        results = s.run(cpus=5, verbose=False)
-        print('--------------------------------')
-        print('Stochastic simulation finished.')
-        print('--------------------------------')
+            # ------------- Add seismic monitoring technology -------------
+            smt = sm.add_component_model_object(
+                SeismicMonitoring(name='smt', parent=sm, survey_config=survey_config, time_points=time_points))
+            # Add keyword arguments linked to the seismic data container outputs
+            smt.add_kwarg_linked_to_obs('data', dc.linkobs['seismic'], obs_type='grid')
+            smt.add_kwarg_linked_to_obs('baseline', dc.linkobs['baseline_seismic'], obs_type='grid')
+            # Add gridded observation
+            smt.add_grid_obs('NRMS', constr_type='matrix', output_dir=output_directory)
+            # Add scalar observations
+            for nm in ['ave_NRMS', 'max_NRMS', 'min_NRMS']:
+                smt.add_obs(nm)
+                smt.add_obs_to_be_linked(nm)
 
-        print('--------------------------------')
-        print('Collecting results...')
-        print('--------------------------------')
-        # Get saved gridded observations from files
-        nrms = np.zeros((num_scenarios, num_time_points,
-                        num_sources, num_receivers))
-        time_indices = list(range(num_time_points))
+            print('--------------------------------')
+            print('Stochastic simulation started...')
+            print('--------------------------------')
+            print('Number of scenarios: {}'.format(num_scenarios))
+            # Create sampleset varying over scenarios: this is not a typical setup
+            # We want to make sure scenarios are not repeated.
+            samples = np.array(scenarios).reshape(num_scenarios, 1)
+            s = sm.create_sampleset(samples)
 
-        for rlzn_number in range(1, num_scenarios+1):
-            print('Realization {}'.format(rlzn_number))
-            data = sm.collect_gridded_observations_as_time_series(
-                smt, 'NRMS', output_directory, indices=time_indices,
-                rlzn_number=rlzn_number) # data shape (num_time_points, num_sources, num_receivers)
-            nrms[rlzn_number-1] = data
+            results = s.run(cpus=5, verbose=False)
+            print('--------------------------------')
+            print('Stochastic simulation finished.')
+            print('--------------------------------')
 
-        file_to_save = os.path.join(
-            output_directory,
-            'nrms_optimization_data_{}_scenarios.npz'.format(num_scenarios))
-        np.savez_compressed(file_to_save, data=nrms)
+            print('--------------------------------')
+            print('Collecting results...')
+            print('--------------------------------')
+            # Get saved gridded observations from files
+            nrms = np.zeros((num_scenarios, num_time_points, num_sources, num_receivers))
+            time_indices = list(range(num_time_points))
 
-        data_check = 0
-        if data_check:
-            # Read file
-            file_to_read = os.path.join(
+            for rlzn_number in range(1, num_scenarios+1):
+                print('Realization {}'.format(rlzn_number))
+                data = sm.collect_gridded_observations_as_time_series(
+                    smt, 'NRMS', output_directory, indices=time_indices,
+                    rlzn_number=rlzn_number) # data shape (num_time_points, num_sources, num_receivers)
+                nrms[rlzn_number-1] = data
+
+            file_to_save = os.path.join(
                 output_directory,
                 'nrms_optimization_data_{}_scenarios.npz'.format(num_scenarios))
-            d = np.load(file_to_read)
-            # Determine shape of the data
-            data_shape = d['data'].shape
-            print(data_shape)  # (36, 20, 9, 101)
-            nrms = d['data']
+            np.savez_compressed(file_to_save, data=nrms)
 
-            # Check that the data makes sense
-            fig = plt.figure(figsize=(12, 5))
-            ax = fig.add_subplot(111)
-            ax_im = ax.imshow(nrms[0, 8, :, :], aspect='auto')
+            data_check = 0
+            if data_check:
+                # Read file
+                file_to_read = os.path.join(
+                    output_directory,
+                    'nrms_optimization_data_{}_scenarios.npz'.format(num_scenarios))
+                d = np.load(file_to_read)
+                # Determine shape of the data
+                data_shape = d['data'].shape
+                print(data_shape)  # (36, 20, 9, 101)
+                nrms = d['data']
 
-            # Set title
-            title = ax.set_title('NRMS at {} years'.format(90))
+                # Check that the data makes sense
+                fig = plt.figure(figsize=(12, 5))
+                ax = fig.add_subplot(111)
+                ax_im = ax.imshow(nrms[0, 8, :, :], aspect='auto')
 
-            # Set x-labels
-            x = np.linspace(0, 100, num=11)
-            xlabels = np.linspace(1, 101, num=11, dtype=int)
-            ax.set_xticks(x, labels=xlabels)
-            ax.set_xlabel('Receivers')
+                # Set title
+                title = ax.set_title('NRMS at {} years'.format(90))
 
-            # Set y-labels
-            y = np.linspace(0, 8, num=9)
-            ylabels = np.linspace(1, 9, num=9, dtype=int)
-            ax.set_yticks(y, labels=ylabels)
-            ax.set_ylabel('Sources')
+                # Set x-labels
+                x = np.linspace(0, 100, num=11)
+                xlabels = np.linspace(1, 101, num=11, dtype=int)
+                ax.set_xticks(x, labels=xlabels)
+                ax.set_xlabel('Receivers')
 
-            # Add colorbar
-            cbar = plt.colorbar(ax_im, label='Percentage, %')
-            fig.tight_layout()
+                # Set y-labels
+                y = np.linspace(0, 8, num=9)
+                ylabels = np.linspace(1, 9, num=9, dtype=int)
+                ax.set_yticks(y, labels=ylabels)
+                ax.set_ylabel('Sources')
 
-if inputs['run_optimization']:
+                # Add colorbar
+                cbar = plt.colorbar(ax_im, label='Percentage, %')
+                fig.tight_layout()
+
+    if inputs['run_optimization']:
         # Start of array_construction_nrms_processing.ipynb
         # Setup directories
         #data_directory = os.path.join('..', 'user', 'output', 'ramp_sys_seismic_monitoring_optimization_data')
@@ -707,7 +704,7 @@ if inputs['run_optimization']:
         yaml.dump({'plans1':plans1,'plans2':plans2,'plans3':plans3,'plans4':plans4,'plans5':plans5,'plans6':plans6,'plans7':plans7,'plans8':plans8,'plans9':plans9,},open('output.yaml','w'))
         pickle.dump({'plans1':plans1,'plans2':plans2,'plans3':plans3,'plans4':plans4,'plans5':plans5,'plans6':plans6,'plans7':plans7,'plans8':plans8,'plans9':plans9,},open('output.dat','wb'))
 
-if inputs['plot_results']:
+    if inputs['plot_results']:
 
         output = json.load(open('output.json','r'))
         plans1 = output['plans1']
