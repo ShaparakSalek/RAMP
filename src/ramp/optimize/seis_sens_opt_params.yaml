@@ -12,5 +12,9 @@ senMax: [10000000.0, 10000000.0, 10000000.0, 1000000000.0]  # Maximum sensitivit
 thresholds: [0.2, 0.6]  # Threshold values for sensitivity
 ks: 4  # ks parameter value
 kr: 4  # kr parameter value
+sen_nor: 1  # flag to control the normalization of the sensivity
+wavefield: ['P', 'S']   # wavefieldof the seismic wave
+vpvs: ['Vp', 'Vs']  # velocity type
+units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'} # unites used for model plpot
 datadir: /Users/tian7/data/NRAP/data_use-case2/  # Directory path for data
 outpre: ./  # Root directory path for output

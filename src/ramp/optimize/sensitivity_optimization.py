@@ -53,7 +53,8 @@ class MonitoringDesignSensitivity2D:
     '''
     sensitivity-based 2D seismic monitoring design
     '''
-    def __init__(self,nx,nz,dx,dz,ns,nr,ds,dr,yrs,t1,thresholds,ks,kr):
+    def __init__(self,nx,nz,dx,dz,ns,nr,ds,dr,yrs,t1,thresholds,ks,kr,sen_nor,datadir,outpre,
+                 wavefield,vpvs,units):
         '''
 
         Parameters
@@ -84,6 +85,22 @@ class MonitoringDesignSensitivity2D:
             Scale factor on the source interval in the simulated data
         kr: int
             Scale factor on the receiver interval in the simulated data
+        datadir:ir: str
+            root directory of sensitivity data
+        outpre: str
+            output directory
+        wavefield: list[str]
+            waveform (P or S)
+        vpvs: list[str]
+            sensitivity wrt Vp or Vs
+        units: dict
+            units of sensitivity data and model
+        wavefield: list[str]
+            waveform (P or S)
+        vpvs: list[str]
+            sensitivity wrt Vp or Vs
+        units: dict
+            units of sensitivity data and model
         '''
 
         self.nx = nx
@@ -99,10 +116,28 @@ class MonitoringDesignSensitivity2D:
         self.thresholds = thresholds
         self.opt_src_sep = ks
         self.opt_rec_sep = kr
+        self.sen_nor=sen_nor
+        self.wavefield = wavefield
+        self.vpvs = vpvs
+        self.units = units
+        self.datadir=datadir
+        self.outpre=outpre
+        # plot velocity, density and plume models (images)
+        self.modeldir = self.datadir + 'models_plume_mask/'
+    
+        self.plume_images_dir = outpre + 'model_plume_images/'
+        
 
-        self.wavefield = ['P', 'S']
-        self.vpvs = ['Vp', 'Vs']
-        self.units = {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}
+        # plot sensitivity images per component
+        self.sensitivity_images_out_dir = outpre + '/sensitivity_images/'
+        if not os.path.exists(self.sensitivity_images_out_dir):
+            os.makedirs(self.sensitivity_images_out_dir)
+
+        self.optimal_dir = outpre + '/optimal_design/'
+        if not os.path.exists(self.optimal_dir):
+            os.makedirs(self.optimal_dir)
+
+
 
     def read_sensitivity_file(self, path, fname):
         '''
@@ -131,7 +166,7 @@ class MonitoringDesignSensitivity2D:
         data = np.fromfile(p+fname, dtype=np.float32, count=-1, sep='')
         return data
 
-    def load_sensitivity_data(self, datadir, yr, wf, vpvs):
+    def load_sensitivity_data(self, datadir, yr, wf, vpvs,norm=0):
         ''' Load sensitivity data of all sources per senstivity component (wf, vpvs)
         and per time step (yr). Scale sensitivity data between 0 and 1
 
@@ -158,12 +193,14 @@ class MonitoringDesignSensitivity2D:
         for i in range(1, self.nsrc+1):
             fname = f'receiver_sensitivity_{wf}_wrt_{vpvs}_src_{i:d}.bin'
             sens[i-1,:] = self.read_sensitivity_file(sDir, fname.lower())
-
-        maxSens = np.max(sens)
-        minSens = np.min(sens)
-        dsens = maxSens - minSens
-        sens = (sens - minSens) / dsens
+        if norm:
+            maxSens = np.max(sens)
+            minSens = np.min(sens)
+            dsens = maxSens - minSens
+            sens = (sens - minSens) / dsens
         return sens
+    
+
 
     # -------------------------------
     def read_seismic_model(self, fname):
@@ -189,60 +226,58 @@ class MonitoringDesignSensitivity2D:
         data = data.reshape(self.nx, self.nz)  # column major array
         return data
 
-    def plot_model_image(self, fname, outdir):
+    def plot_model_image(self):
         ''' plot baseline Vp, Vs and density model and plume mask model
-
-        Parameters
-        ----------
-        modeldir: str
-            baseline Vp, Vs, density model and plume mass model dir
-        outdir: str
-            directory to save model images
 
         '''
         cmap = create_cmap()
-        model = self.read_seismic_model(fname)
-        _, basename = os.path.split(fname)
-        print(basename)
-        tokens = basename.split('.')
-        param = tokens[0].split('_')[0]  # vp, vs, den, mask
+        if not os.path.exists(self.plume_images_dir):
+            os.makedirs(self.plume_images_dir)
+        fnames = glob.glob(self.modeldir + '*.bin')
+        for fname in fnames:
+            #seis.plot_model_image(fname, out_dir)
+            model = self.read_seismic_model(fname)
+            _, basename = os.path.split(fname)
+            print(basename)
+            tokens = basename.split('.')
+            param = tokens[0].split('_')[0]  # vp, vs, den, mask
 
-        fig, ax = plt.subplots(figsize=(12, 5))
+            fig, ax = plt.subplots(figsize=(12, 5))
 
-        if param.lower() == 'mask':  # mask
-            img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap=cmap)
-            s = tokens[0][:-8]
-            ss = s[-3:]
-            if ss[0] == 'y': ss = ss[1:]
-            yr = str(int(ss) - self.t1)
-            annotate = 'CO$_2$ plume mask at t1+' + yr + ' years'
-            label = 'CO$_2$ Plume Mask'
-            # Add text using relative positioning
-            relative_x_position = 0.03  # 3% from the left edge
-            relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
-            ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
-        else:
-            img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap='jet')
-            if len(param)==3: param='density'
-            annotate = param.title()
-            label = annotate + self.units[param]
-            fig.colorbar(img, label=label, orientation='horizontal',
-                     fraction=0.06, shrink=0.5, pad=0.18, aspect=30)
-            # Add text using relative positioning
-            relative_x_position = 0.03  # 3% from the left edge
-            relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
-            ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
+            if param.lower() == 'mask':  # mask
+                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap=cmap)
+                s = tokens[0][:-8]
+                ss = s[-3:]
+                if ss[0] == 'y': ss = ss[1:]
+                yr = str(int(ss) - self.t1)
+                annotate = 'CO$_2$ plume mask at t1+' + yr + ' years'
+                label = 'CO$_2$ Plume Mask'
+                # Add text using relative positioning
+                relative_x_position = 0.03  # 3% from the left edge
+                relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
+                ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
+            else:
+                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap='jet')
+                if len(param)==3: param='density'
+                annotate = param.title()
+                label = annotate + self.units[param]
+                fig.colorbar(img, label=label, orientation='horizontal',
+                        fraction=0.06, shrink=0.5, pad=0.18, aspect=30)
+                # Add text using relative positioning
+                relative_x_position = 0.03  # 3% from the left edge
+                relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
+                ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
 
-        ax.set_xlabel('Horizontal Distance (m)')
-        ax.set_ylabel('Depth (m)')
-        ax.grid(lw=0.2, alpha=0.5)
-        plt.tight_layout()
-        s = os.path.splitext(basename)[0]
-        plt.savefig(outdir + s + '.png', bbox_inches='tight')
-        if DEBUG: plt.show()
-        plt.cla()
-        plt.clf()
-        plt.close()
+            ax.set_xlabel('Horizontal Distance (m)')
+            ax.set_ylabel('Depth (m)')
+            ax.grid(lw=0.2, alpha=0.5)
+            plt.tight_layout()
+            s = os.path.splitext(basename)[0]
+            plt.savefig(self.plume_images_dir + s + '.png', bbox_inches='tight')
+            if DEBUG: plt.show()
+            plt.cla()
+            plt.clf()
+            plt.close()
 
 
     def plot_sensitivity_image(self, sens, outdir, yr, wf, vpvs, area):
@@ -303,7 +338,7 @@ class MonitoringDesignSensitivity2D:
         plt.clf()
         plt.close()
     
-    def find_optimal_seismic_arrays(self,sens,threshold):
+    def find_optimal_seismic_arrays(self,sens,threshold,norm=0):
         '''
         Find optimal sources and receivers with scaled sensitivity
         above a threshold Scale source and reciver intervals
@@ -321,7 +356,13 @@ class MonitoringDesignSensitivity2D:
             an array of sensitivity masks showing optimal source and receiver locations
 
         '''
-        out = sens >= threshold
+        if norm==1:
+            out = sens >= threshold
+        else:
+            maxSens = np.max(sens)
+            minSens = np.min(sens)
+            dsens = maxSens - minSens
+            out = sens >= (threshold*dsens  + minSens)
         
         sens_sel=sens*out
         # increase source interval by a factor of ks and receiver interval by kr
@@ -467,21 +508,17 @@ if __name__ == "__main__":
     thresholds = parameters['thresholds']
     ks = parameters['ks']
     kr = parameters['kr']
+    sen_nor=parameters['sen_nor']
+    wavefield = parameters['wavefield']
+    vpvs = parameters['vpvs']
+    units= parameters['units']
     datadir = parameters['datadir']
     outpre = parameters['outpre']
     years = [str(y) for y in years0]
     # create a sensitivity object
-    seis = MonitoringDesignSensitivity2D(nx,nz,dx,dz,ns,nr,ds,dr,years,t1,thresholds,ks,kr)
+    seis = MonitoringDesignSensitivity2D(nx,nz,dx,dz,ns,nr,ds,dr,years,t1,thresholds,ks,kr,sen_nor,datadir,outpre,wavefield,vpvs,units)
 
-    # plot velocity, density and plume models (images)
-    modeldir = datadir + 'models_plume_mask/'
-    
-    out_dir = outpre + 'model_plume_images/'
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    fnames = glob.glob(modeldir + '*.bin')
-    for fname in fnames:
-        seis.plot_model_image(fname, out_dir)
+    seis.plot_model_image()
 
     # plot sensitivity images per component
     out_dir = outpre + '/sensitivity_images/'
@@ -496,45 +533,47 @@ if __name__ == "__main__":
     for wf in seis.wavefield:
         for ps in seis.vpvs:
             sens2d = seis.load_sensitivity_data(datadir, seis.timestamps[-1], wf, ps)
-            design1, _,sen_sel = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1])
+            design1, _,sen_sel = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1],norm=sen_nor)
             ns_max = seis.find_max_num_sources(design1)
             for yr in seis.timestamps:
                 print('Optimal design', yr+'y', wf, ps)
                 sens2d = seis.load_sensitivity_data(datadir,yr,wf,ps)
-                _, area[0],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0])
-                design1, area[1],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1])
+                _, area[0],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0],norm=sen_nor)
+                design1, area[1],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1],norm=sen_nor)
                 seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
-                design2 = seis.plot_optimal_design(design1,modeldir,optimal_dir,wf,ps,yr,ns_max)
+                design2 = seis.plot_optimal_design(design1,seis.modeldir,optimal_dir,wf,ps,yr,ns_max)
                 fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
                 with open(fname, 'w') as fout:
                     for line in design2:
                         fout.write(str(line) + '\n')
-
-
-    sens_dtc_dir = outpre + '/sens_dtc/'
-    if not os.path.exists(sens_dtc_dir):
-        os.makedirs(sens_dtc_dir)
-    
-    plt.figure(figsize=(20,15))
-    for yr in seis.timestamps[:]:
-        plt.subplot(2,3,seis.timestamps.index(yr)+1)
-        for wf in seis.wavefield:
-            for ps in seis.vpvs:
-                sens2d = seis.load_sensitivity_data(datadir, yr, wf, ps)
-                arae_all=[]
-                sen_all=[]
-                for th in 1/np.arange(1,10):
-                    design, area,sen_sel = seis.find_optimal_seismic_arrays(sens2d,th)
-                    arae_all.append(area)
-                    sen_all.append(sen_sel)
-                plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
-        plt.xlabel('data to collect (%)')
-        plt.ylabel('Total Sensitivity')
-        plt.title('{} yr'.format(yr))
-        plt.legend()
-
-    plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
-    print('Done')
+    dtc_flag=1
+    if dtc_flag==1:
+        sens_dtc_dir = outpre + '/sens_dtc/'
+        if not os.path.exists(sens_dtc_dir):
+            os.makedirs(sens_dtc_dir)
+        
+        plt.figure(figsize=(20,15))
+        for yr in seis.timestamps[:]:
+            plt.subplot(2,3,seis.timestamps.index(yr)+1)
+            for wf in seis.wavefield:
+                for ps in seis.vpvs:
+                    sens2d = seis.load_sensitivity_data(datadir, yr, wf, ps)
+                    arae_all=[]
+                    sen_all=[]
+                    for th in 1/np.arange(1,10):
+                        design, area,sen_sel = seis.find_optimal_seismic_arrays(sens2d,th,norm=sen_nor)
+                        arae_all.append(area)
+                        sen_all.append(sen_sel)
+                    plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
+            plt.xlabel('data to collect (%)')
+            plt.ylabel('Total Sensitivity')
+            plt.title('{} yr'.format(yr))
+            plt.legend()
+        # change default font size
+        plt.rcParams.update({'font.size': 20})
+        
+        plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
+        print('Done')
 
 
 
