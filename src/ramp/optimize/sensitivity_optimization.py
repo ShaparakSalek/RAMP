@@ -33,7 +33,15 @@ DEBUG = False
 def read_yaml_parameters(file_path):
     with open(file_path, 'r') as file:
         params = yaml.safe_load(file)
-    return params
+    # Flattening the restructured YAML content
+    flattened_params = {}
+    for section, values in params.items():
+        if isinstance(values, dict):  # Adding a check for dictionary items
+            for key, value in values.items():
+                flattened_params[key] = value
+        else:
+            flattened_params[section] = values
+    return flattened_params
 
 def create_cmap():
     '''

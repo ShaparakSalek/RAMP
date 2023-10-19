@@ -1,20 +1,49 @@
-nx: 1467  # Number of grid points in the x direction
-nz: 335   # Number of grid points in the z direction
-dz: 7.5  # Depth interval (also applies to dx)
-dx: 7.5  # Horizontal interval
-ns: 146  # Number of sources
-nr: 1467  # Number of receivers
-dr: 7.5  # Receiver interval (m)
-ds: 75.0  # Source interval (m)
-t1: 78  # Year when fault leakage begins
-years: [80, 85, 90, 95, 100, 125]  # List of years for monitoring
-senMax: [10000000.0, 10000000.0, 10000000.0, 1000000000.0]  # Maximum sensitivity values
-thresholds: [0.2, 0.6]  # Threshold values for sensitivity
-ks: 4  # ks parameter value
-kr: 4  # kr parameter value
-sen_nor: 1  # flag to control the normalization of the sensivity
-wavefield: ['P', 'S']   # wavefieldof the seismic wave
-vpvs: ['Vp', 'Vs']  # velocity type
-units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'} # unites used for model plpot
-datadir: /Users/tian7/data/NRAP/data_use-case2/  # Directory path for data
-outpre: ./  # Root directory path for output
+domain:
+  # Number of grid points in the x direction
+  nx: 1467
+  # Number of grid points in the z direction
+  nz: 335
+  # Horizontal interval
+  dx: 7.5
+  # Depth interval (also applies to dx)
+  dz: 7.5
+
+source:
+  # Number of sources
+  ns: 146
+  # Source interval (m)
+  ds: 75.0
+  # Year when fault leakage begins
+  t1: 78
+  # wavefield of the seismic wave
+  wavefield: ['P', 'S']
+
+receiver:
+  # Number of receivers
+  nr: 1467
+  # Receiver interval (m)
+  dr: 7.5
+
+sensitivities:
+  # List of years for monitoring
+  years: [80, 85, 90, 95, 100, 125]
+  # Maximum sensitivity values
+  senMax: [10000000.0, 10000000.0, 10000000.0, 1000000000.0]
+  # Threshold values for sensitivity
+  thresholds: [0.2, 0.6]
+  # ks parameter value
+  ks: 4
+  # kr parameter value
+  kr: 4
+  # flag to control the normalization of the sensivity
+  sen_nor: 1
+  # velocity type
+  vpvs: ['Vp', 'Vs']
+  # units used for model plot
+  units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}
+
+file_path:
+  # Directory path for data
+  datadir: /Users/tian7/data/NRAP/data_use-case2/
+  # Root directory path for output
+  outpre: ./
