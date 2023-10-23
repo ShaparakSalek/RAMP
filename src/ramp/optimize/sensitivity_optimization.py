@@ -488,18 +488,9 @@ class MonitoringDesignSensitivity2D:
         plt.clf()
         plt.close()
         return design
+    
 
-
-
-
-
-# ----------------------------------------
-if __name__ == "__main__":
-    # Command-line argument parsing to get the YAML configuration file
-    parser = argparse.ArgumentParser(description='Seismic Design Optimization Script')
-    parser.add_argument('--config', type=str, default='seis_sens_opt_params.yaml', help='Path to the configuration YAML file.')
-    args = parser.parse_args()
-    yaml_path = args.config
+def init_seis_from_yaml(yaml_path):
     parameters = read_yaml_parameters(yaml_path)
     # read in parameters from YAML file
     nx = parameters['nx']
@@ -525,63 +516,94 @@ if __name__ == "__main__":
     years = [str(y) for y in years0]
     # create a sensitivity object
     seis = MonitoringDesignSensitivity2D(nx,nz,dx,dz,ns,nr,ds,dr,years,t1,thresholds,ks,kr,sen_nor,datadir,outpre,wavefield,vpvs,units)
+    return seis
 
-    seis.plot_model_image()
+                
 
+def plot_sens_to_percent(seis):
+    sens_dtc_dir = seis.outpre + '/sens_dtc/'
+    if not os.path.exists(sens_dtc_dir):
+        os.makedirs(sens_dtc_dir)
+    
+    plt.figure(figsize=(20,15))
+    for yr in seis.timestamps[:]:
+        plt.subplot(2,3,seis.timestamps.index(yr)+1)
+        for wf in seis.wavefield:
+            for ps in seis.vpvs:
+                sens2d = seis.load_sensitivity_data(seis.datadir, yr, wf, ps,norm=seis.sen_nor)
+                arae_all=[]
+                sen_all=[]
+                for th in 1/np.arange(1,400):
+                    design, area,sen_sel = seis.find_optimal_seismic_arrays(sens2d,th,norm=seis.sen_nor)
+                    arae_all.append(area)
+                    sen_all.append(sen_sel)
+                if seis.sen_nor==1:
+                    plt.plot(arae_all,np.array(sen_all)/1250,'o-',label=wf+'_'+ps)                        
+                else:
+                    plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
+        plt.xlabel('data to collect (%)')
+        if seis.sen_nor==1:
+            plt.ylim(0,1)
+            plt.ylabel('Normalized Total Sensitivity (m/s)')
+        else:
+            plt.ylabel('Total Sensitivity (m/s)')
+        year=int(yr)-78
+        plt.title('t1+{} yr'.format(year))
+        plt.legend()
+    # change default font size
+    plt.rcParams.update({'font.size': 20})
+    
+    plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
+    print('Done')
+
+
+def plot_and_find_opt_arrays(seis):
     # plot sensitivity images per component
-    out_dir = outpre + '/sensitivity_images/'
+    out_dir = seis.outpre + '/sensitivity_images/'
     if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+        os.makedirs(seis.out_dir)
 
-    optimal_dir = outpre + '/optimal_design/'
+    optimal_dir = seis.outpre + '/optimal_design/'
     if not os.path.exists(optimal_dir):
         os.makedirs(optimal_dir)
 
     area = [0.0, 0.0]
     for wf in seis.wavefield:
         for ps in seis.vpvs:
-            sens2d = seis.load_sensitivity_data(datadir, seis.timestamps[-1], wf, ps)
-            design1, _,sen_sel = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1],norm=sen_nor)
+            sens2d = seis.load_sensitivity_data(seis.datadir, seis.timestamps[-1], wf, ps,norm=seis.sen_nor)
+            design1, _,sen_sel = seis.find_optimal_seismic_arrays(sens2d, seis.thresholds[1],norm=seis.sen_nor)
             ns_max = seis.find_max_num_sources(design1)
             for yr in seis.timestamps:
                 print('Optimal design', yr+'y', wf, ps)
-                sens2d = seis.load_sensitivity_data(datadir,yr,wf,ps)
-                _, area[0],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0],norm=sen_nor)
-                design1, area[1],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1],norm=sen_nor)
+                sens2d = seis.load_sensitivity_data(seis.datadir,yr,wf,ps,norm=seis.sen_nor)
+                _, area[0],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[0],norm=seis.sen_nor)
+                design1, area[1],sen_sel = seis.find_optimal_seismic_arrays(sens2d,seis.thresholds[1],norm=seis.sen_nor)
                 seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
                 design2 = seis.plot_optimal_design(design1,seis.modeldir,optimal_dir,wf,ps,yr,ns_max)
                 fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
                 with open(fname, 'w') as fout:
                     for line in design2:
                         fout.write(str(line) + '\n')
+
+
+
+
+# ----------------------------------------
+if __name__ == "__main__":
+    # Command-line argument parsing to get the YAML configuration file
+    parser = argparse.ArgumentParser(description='Seismic Design Optimization Script')
+    parser.add_argument('--config', type=str, default='seis_sens_opt_params.yaml', help='Path to the configuration YAML file.')
+    args = parser.parse_args()
+    yaml_path = args.config
+    # create a sensitivity object
+    seis = init_seis_from_yaml(yaml_path)
+
+    seis.plot_model_image()
+
+    plot_and_find_opt_arrays(seis)
     dtc_flag=1
     if dtc_flag==1:
-        sens_dtc_dir = outpre + '/sens_dtc/'
-        if not os.path.exists(sens_dtc_dir):
-            os.makedirs(sens_dtc_dir)
-        
-        plt.figure(figsize=(20,15))
-        for yr in seis.timestamps[:]:
-            plt.subplot(2,3,seis.timestamps.index(yr)+1)
-            for wf in seis.wavefield:
-                for ps in seis.vpvs:
-                    sens2d = seis.load_sensitivity_data(datadir, yr, wf, ps)
-                    arae_all=[]
-                    sen_all=[]
-                    for th in 1/np.arange(1,10):
-                        design, area,sen_sel = seis.find_optimal_seismic_arrays(sens2d,th,norm=sen_nor)
-                        arae_all.append(area)
-                        sen_all.append(sen_sel)
-                    plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
-            plt.xlabel('data to collect (%)')
-            plt.ylabel('Total Sensitivity')
-            plt.title('{} yr'.format(yr))
-            plt.legend()
-        # change default font size
-        plt.rcParams.update({'font.size': 20})
-        
-        plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
-        print('Done')
+        plot_sens_to_percent(seis)
 
 
 
