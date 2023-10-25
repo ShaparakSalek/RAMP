@@ -1,12 +1,8 @@
 import os
 import sys
 import unittest
-import warnings
 import numpy as np
 np.set_printoptions(threshold=sys.maxsize)
-import h5py
-from shutil import copyfile
-import matplotlib.pyplot as plt
 
 try:
     from openiam import SystemModel
