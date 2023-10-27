@@ -15,14 +15,23 @@ source:
   ds: 75.0
   # Year when fault leakage begins
   t1: 78
-  # wavefield of the seismic wave
-  wavefield: ['P', 'S']
+
 
 receiver:
   # Number of receivers
   nr: 1467
   # Receiver interval (m)
   dr: 7.5
+
+flags:
+  # flag to control the normalization of the sensivity
+  sen_nor: 0
+  # flag to control wether or not to plot sensitivity vs "data to collect" plots
+  dtc_flag: 0
+  # flag for yaml file output, set as 1 to use yaml format output, 0 for text file
+  output_yaml: 1
+  # flag to use "segy" format, 0 to read data from bin files directly
+  segy_read: 1
 
 sensitivities:
   # List of years for monitoring
@@ -35,8 +44,10 @@ sensitivities:
   ks: 4
   # kr parameter value
   kr: 4
-  # flag to control the normalization of the sensivity
-  sen_nor: 1
+  # User defined data to collect percentage
+  target_dtc: 5
+  # wavefield of the seismic wave
+  wavefield: ['P', 'S']
   # velocity type
   vpvs: ['Vp', 'Vs']
   # units used for model plot
@@ -44,6 +55,6 @@ sensitivities:
 
 file_path:
   # Directory path for data
-  datadir: /Users/tian7/data/NRAP/data_use-case2/
+  datadir: ./example_data/
   # Root directory path for output
-  outpre: ./
+  outpre: ./output/

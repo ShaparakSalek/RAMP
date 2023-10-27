@@ -3,6 +3,10 @@
 
 
 ## Usage
+First create python environment using the following command:
+'''
+conda env create -f environment.yml
+'''
 
 Run the script using Python:
 
