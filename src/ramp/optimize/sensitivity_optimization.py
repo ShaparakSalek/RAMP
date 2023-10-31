@@ -210,90 +210,55 @@ class MonitoringDesignSensitivity2D:
     '''
     sensitivity-based 2D seismic monitoring design
     '''
-    def __init__(self,nx,nz,dx,dz,ns,nr,ds,dr,yrs,t1,thresholds,ks,kr,sen_nor,datadir,outpre,
-                 wavefield,vpvs,units,dtc_flag,output_yaml,target_dtc,segy_read):
-        '''
+    def __init__(self,yaml_path):
+        """
+        Initializes seismic parameters from a YAML file.
 
-        Parameters
-        ----------
-        nx: int
-            number of horizontal grid points on seismic model mesh
-        nz: int
-            number of vertical grid points on seismic model mesh
-        dx: float
-            hotizontal grid interval
-        dz: float
-            vertical grid interval
-        ns: int
-            Number of seismic sourcs
-        nr: int
-            Number of seismic receivers
-        ds: float
-            Seismic source interval
-        dr: float
-            Seismic receiver interval
-        yrs: list[str]
-            A list of time steps, e.g., ['80', '85']
-        t1: float
-            the year when fault leakage begins
-        thresholds: list[float]
-            Two thresholds of scaled sensitivity, e.g., 0.2, 0.6
-        ks: int
-            Scale factor on the source interval in the simulated data
-        kr: int
-            Scale factor on the receiver interval in the simulated data
-        datadir:ir: str
-            root directory of sensitivity data
-        outpre: str
-            output directory
-        wavefield: list[str]
-            waveform (P or S)
-        vpvs: list[str]
-            sensitivity wrt Vp or Vs
-        units: dict
-            units of sensitivity data and model
-        wavefield: list[str]
-            waveform (P or S)
-        vpvs: list[str]
-            sensitivity wrt Vp or Vs
-        units: dict
-            units of sensitivity data and model
-        '''
+        Parameters:
+            yaml_path (str): Path to the input YAML file.
 
-        self.nx = nx
-        self.nz = nz
-        self.dx = dx
-        self.dz = dz
-        self.nsrc = ns
-        self.nrec = nr
-        self.dsrc = ds
-        self.drec = dr
-        self.timestamps = yrs
-        self.t1 = t1
-        self.thresholds = thresholds
-        self.opt_src_sep = ks
-        self.opt_rec_sep = kr
-        self.sen_nor=sen_nor
-        self.wavefield = wavefield
-        self.vpvs = vpvs
-        self.units = units
-        self.datadir=datadir
-        self.outpre=outpre
+        """
+
+        parameters = read_yaml_parameters(yaml_path)
+        # read in parameters from YAML file
+        self.nx = parameters['nx']
+        self.nz = parameters['nz']
+        self.dz = parameters['dz']
+        self.dx = parameters['dx']
+        self.nsrc = parameters['ns']
+        self.nrec = parameters['nr']
+        self.drec = parameters['dr']
+        self.dsrc = parameters['ds']
+        self.t1 = parameters['t1']
+        years0 = parameters['years']
+        self.senMax = parameters['senMax']
+        self.thresholds = parameters['thresholds']
+        self.opt_src_sep = parameters['ks']
+        self.opt_rec_sep = parameters['kr']
+        self.sen_nor=parameters['sen_nor']
+        self.wavefield = parameters['wavefield']
+        self.vpvs = parameters['vpvs']
+        self.units= parameters['units']
+        self.datadir = parameters['datadir']
+        self.outpre = parameters['outpre']
+        self.timestamps = [str(y) for y in years0]
+        self.dtc_flag=parameters['dtc_flag']
+        self.output_yaml=parameters['output_yaml']
+        self.target_dtc=parameters['target_dtc']
+        self.segy_read=parameters['segy_read']
+        # create a sensitivity object
+
         # plot velocity, density and plume models (images)
         self.modeldir = self.datadir + 'models_plume_mask/'
     
-        self.plume_images_dir = outpre + 'model_plume_images/'
-        self.dtc_flag=dtc_flag
-        self.output_yaml=output_yaml
-        self.target_dtc=target_dtc
-        self.segy_read=segy_read
+        self.plume_images_dir = self.outpre + 'model_plume_images/'
 
         # plot sensitivity images per component
-        self.sensitivity_images_out_dir = outpre + '/sensitivity_images/'
+        self.sensitivity_images_out_dir = self.outpre + '/sensitivity_images/'
         if not os.path.exists(self.sensitivity_images_out_dir):
             os.makedirs(self.sensitivity_images_out_dir)
 
-        self.optimal_dir = outpre + '/optimal_design/'
+        self.optimal_dir = self.outpre + '/optimal_design/'
         if not os.path.exists(self.optimal_dir):
             os.makedirs(self.optimal_dir)
 
@@ -815,7 +780,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     yaml_path = args.config
     # create a sensitivity object
-    seis = init_seis_from_yaml(yaml_path)
+    seis = MonitoringDesignSensitivity2D(yaml_path)
 
     seis.plot_model_image()
 
