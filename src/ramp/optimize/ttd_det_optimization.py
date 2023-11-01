@@ -105,7 +105,7 @@ def single_array_timings(nrmsBool):
         for iTimeStep in range(nrmsBool.shape[2]):
             det = int(np.sum(nrmsBool[iArray, :, iTimeStep]))
             ttd = iTimeStep
-            plan = (((iArray, iTimeStep),), det, ttd)
+            plan = (((iArray, iTimeStep),), det, ttd, tuple([int(x) for x in np.where(nrmsBool[iArray, :, iTimeStep])[0]]) )
             if plan[1] > 0:
                 plans.add(plan)
     return plans
@@ -143,7 +143,7 @@ def additional_array_timings(plans_input, nrmsBool):
                     if len(thisScenarioTTD) > 0:
                         thisTTD += [np.min(thisScenarioTTD)]
                 if len(thisTTD) > 0:
-                    thisTTD = np.mean(thisTTD)
+                    thisTTD = float(np.mean(thisTTD))
                     if np.any(nrmsBool[iArray, :, iTimeStep]) or thisTTD < plan[2]:
                         thisDet = int(np.sum(nrmsBool[iArray, :, iTimeStep]))
                         skip = False
@@ -152,6 +152,6 @@ def additional_array_timings(plans_input, nrmsBool):
                                 skip = True
                                 break
                         if not skip:
-                            newPlan = (plan[0]+((iArray, iTimeStep),), thisDet, thisTTD)
+                            newPlan = (plan[0]+((iArray, iTimeStep),), thisDet, thisTTD, tuple([int(x) for x in np.where(nrmsBool[iArray, :, iTimeStep])[0]]) )
                             plans.add(newPlan)
     return plans

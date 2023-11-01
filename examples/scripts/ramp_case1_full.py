@@ -90,8 +90,8 @@ data_case = inputs['data_case']  # 1 is seismic data, 2 is velocity data
 # Choose scenarios to download
 #scenario_indices = list(range(1, 992))  # e.g., list(range(51, 201)) requests files from 51 to 200
 #scenario_indices = list(range(11, 14))  # e.g., list(range(51, 201)) requests files from 51 to 200
-print(inputs['scenarios'])
-print(type(inputs['scenarios']))
+#print(inputs['scenarios'])
+#print(type(inputs['scenarios']))
 #if '-' in inputs['scenarios']: print(inputs['scenarios'])
 if isinstance(inputs['scenarios'],int):    scenario_indices = list(range(1,inputs['scenarios']+1))
 elif isinstance(inputs['scenarios'],list): scenario_indices = inputs['scenarios']
@@ -101,9 +101,8 @@ elif isinstance(inputs['scenarios'],str):
     else: raise Exception('Error, scenarios list is not formatted correctly')
 else: raise Exception('Error, scenarios list is not formatted correctly')
 
-print(scenario_indices)
+#print(scenario_indices)
 
-#exit()
 #scenario_indices = inputs['scenarios']  # e.g., list(range(51, 201)) requests files from 51 to 200
 
 # Setup whether downloaded files should be unzipped
@@ -700,22 +699,23 @@ if __name__ == "__main__":
         plans9up = find_unique_pareto(plans9)
         plans9up = list(set(plans9up).union(find_different_density_same_timestep(plans9,produced_arrays)))
 
-        json.dump({'plans1':plans1,'plans2':plans2,'plans3':plans3,'plans4':plans4,'plans5':plans5,'plans6':plans6,'plans7':plans7,'plans8':plans8,'plans9':plans9,},open('output.json','w'))
-        yaml.dump({'plans1':plans1,'plans2':plans2,'plans3':plans3,'plans4':plans4,'plans5':plans5,'plans6':plans6,'plans7':plans7,'plans8':plans8,'plans9':plans9,},open('output.yaml','w'))
-        pickle.dump({'plans1':plans1,'plans2':plans2,'plans3':plans3,'plans4':plans4,'plans5':plans5,'plans6':plans6,'plans7':plans7,'plans8':plans8,'plans9':plans9,},open('output.dat','wb'))
+        plans = { 'stage1':[plans1,plans2,plans3],'stage2':[plans4,plans5,plans6],'stage3':[plans6,plans8,plans9] }
+        json.dump({'arrays':configuration.arrays,'plans':plans},open('output.json','w'))
+        yaml.dump({'arrays':configuration.arrays,'plans':plans},open('output.yaml','w'))
+        pickle.dump({'arrays':configuration.arrays,'plans':plans},open('output.dat','wb'))
 
     if inputs['plot_results']:
 
         output = json.load(open('output.json','r'))
-        plans1 = output['plans1']
-        plans2 = output['plans2']
-        plans3 = output['plans3']
-        plans4 = output['plans4']
-        plans5 = output['plans5']
-        plans6 = output['plans6']
-        plans7 = output['plans7']
-        plans8 = output['plans8']
-        plans9 = output['plans9']
+        plans1 = output['plans']['stage1'][0]
+        plans2 = output['plans']['stage1'][1]
+        plans3 = output['plans']['stage1'][2]
+        plans4 = output['plans']['stage2'][0]
+        plans5 = output['plans']['stage2'][1]
+        plans6 = output['plans']['stage2'][2]
+        plans7 = output['plans']['stage3'][0]
+        plans8 = output['plans']['stage3'][1]
+        plans9 = output['plans']['stage3'][2]
 
         x1 = np.array([plan[1] for plan in plans1])
         y1 = np.array([plan[2] for plan in plans1])
@@ -778,4 +778,152 @@ if __name__ == "__main__":
         plt.scatter(x9, 10*y9, s=10, c='green', zorder=1, label='3 arrays/times')
 
         plt.savefig('%s/multi_stage_optimization.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
+        plt.close()
+
+        candidates = np.where(x3==np.max(x3))[0]
+        stage1_best = np.random.choice(candidates[np.where(y3[candidates]==np.min(y3[candidates]))[0]])
+        print('stage1_best',plans3[stage1_best])
+
+        xmin = +np.inf
+        xmax = -np.inf
+        for deployment in plans3[stage1_best][0]:
+            iArray = deployment[0]
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+
+        fig = plt.figure(figsize=(24,8))
+        kk=1
+        for deployment in plans3[stage1_best][0]:
+            ax = fig.add_subplot(1,len(plans3[stage1_best]),kk,projection='3d')
+            iArray = deployment[0]
+            iTime  = deployment[1]
+            print(iArray,configuration.arrays[iArray])
+
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+
+            ax.set_xlim([xmin,xmax])
+            ax.set_xlabel('Easting [m]',fontsize=14)
+            ax.set_ylabel('Northing [m]',fontsize=14)
+            ax.set_zlabel('Depth [m]',fontsize=14)
+            kk+=1
+
+        plt.savefig('%s/arrays_stage1.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
+        plt.close()
+
+
+        candidates = np.where(x6==np.max(x6))[0]
+        stage2_best = np.random.choice(candidates[np.where(y6[candidates]==np.min(y6[candidates]))[0]])
+        print('stage2_best',plans6[stage2_best])
+
+        xmin = +np.inf
+        xmax = -np.inf
+        for deployment in plans6[stage2_best][0]:
+            iArray = deployment[0]
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+
+        fig = plt.figure(figsize=(24,8))
+        kk=1
+        for deployment in plans6[stage2_best][0]:
+            ax = fig.add_subplot(1,len(plans3[stage2_best]),kk,projection='3d')
+            iArray = deployment[0]
+            iTime  = deployment[1]
+            print(iArray,configuration.arrays[iArray])
+
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+
+            ax.set_xlim([xmin,xmax])
+            ax.set_xlabel('Easting [m]',fontsize=14)
+            ax.set_ylabel('Northing [m]',fontsize=14)
+            ax.set_zlabel('Depth [m]',fontsize=14)
+            kk+=1
+
+        plt.savefig('%s/arrays_stage2.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
+        plt.close()
+
+
+        candidates = np.where(x9==np.max(x9))[0]
+        stage3_best = np.random.choice(candidates[np.where(y9[candidates]==np.min(y9[candidates]))[0]])
+        print('stage3_best',plans9[stage3_best])
+
+        xmin = +np.inf
+        xmax = -np.inf
+        for deployment in plans9[stage3_best][0]:
+            iArray = deployment[0]
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            xmin = np.min([xmin,np.min(xyz)])
+            xmax = np.max([xmax,np.max(xyz)])
+
+        fig = plt.figure(figsize=(24,8))
+        kk=1
+        for deployment in plans9[stage3_best][0]:
+            ax = fig.add_subplot(1,len(plans9[stage3_best]),kk,projection='3d')
+            iArray = deployment[0]
+            iTime  = deployment[1]
+            print(iArray,configuration.arrays[iArray])
+
+            iSource = configuration.arrays[iArray]['source']
+            iReceivers = configuration.arrays[iArray]['receivers']
+
+            xyz = np.array(configuration.sources.coordinates[iSource])
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+
+            xyz = np.array(configuration.receivers.coordinates[iReceivers])
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+
+            ax.set_xlim([xmin,xmax])
+            ax.set_xlabel('Easting [m]',fontsize=14)
+            ax.set_ylabel('Northing [m]',fontsize=14)
+            ax.set_zlabel('Depth [m]',fontsize=14)
+            kk+=1
+
+        plt.savefig('%s/arrays_stage3.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
+        plt.close()
+
+        tt = time_points
+        dd = []
+        for i in range(nrmsBool.shape[2]):
+            print( i,np.any(nrmsBool[:,:,:i],axis=(0,2)), np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) )
+            dd += [ np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) ]
+        print(nrmsBool.shape)
+        print(tt,dd)
+        tt,dd = scatter2step(tt,dd)
+        print(tt,dd)
+
+        plt.figure(figsize=(10,8))
+        plt.plot(tt,dd)
+        plt.xlabel('Time [years]',fontsize=14)
+        plt.ylabel('Number of Leaks Detectable',fontsize=14)
+        plt.savefig('%s/detection_breakthrough_curve.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
         plt.close()
