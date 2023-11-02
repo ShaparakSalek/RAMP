@@ -41,9 +41,7 @@ def create_cmap():
     -------
     cmap: LinearSegmentedColormap
     '''
-    colors = [(0.00, '#ffffff'),
-              # (0.03, '#ffff00'),
-              (1.00, '#ff0000')]
+    colors = ['white', 'red']
     cmap = LinearSegmentedColormap.from_list('my_cmap', colors, N=64)
     return cmap
 
@@ -521,9 +519,9 @@ class MonitoringDesignSensitivity2D:
             plt.xlabel('data to collect (%)')
             if self.sen_nor==1:
                 plt.ylim(0,1)
-                plt.ylabel('Normalized Total Sensitivity (m/s)')
+                plt.ylabel('Normalized Total Sensitivity ')
             else:
-                plt.ylabel('Total Sensitivity (m/s)')
+                plt.ylabel('Total Sensitivity ')
             year=int(yr)-78
             plt.title('t1+{} yr'.format(year))
             plt.legend()
