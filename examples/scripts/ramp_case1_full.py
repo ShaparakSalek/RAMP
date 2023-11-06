@@ -80,8 +80,6 @@ except:
 # ====================================
 # Duplicate options commented out in detailed setup below
 # Use your API-Key
-#api_key = "db3f43a7-a871-4608-b349-48c8af2b3be2"
-#api_key = '2fb3645b-5657-4986-bf16-4fad657fbb45'
 api_key = inputs['edx_api_key']
 
 # Choose what data needs to be downloaded
@@ -288,13 +286,13 @@ if __name__ == "__main__":
             if len(files) != 20: # could check for specific files if necessary
                 incomplete.append(scen_ind)
         print(f'incomplete scenarios (1st round): {incomplete}')
-    
+
         # Delete incomplete data folders
         for scen_ind in incomplete:
             files = os.sep.join([output_directory, base_name.format(scen_ind)])
             if os.path.isdir(files):
                 shutil.rmtree(files)
-    
+
         # Run download script again on deleted files
         # Get URL of files to be downloaded
         urls = {}
@@ -306,7 +304,7 @@ if __name__ == "__main__":
                 scen_ind = int(res['name'][6:10])  # valid for vp_model
             if scen_ind in incomplete: ### Only change to download script is list of files ###
                 urls[scen_ind] = res['url']
-    
+
         # Download files
         for scen_ind, url_link in urls.items():
             print(f'scen_ind: {scen_ind}')
@@ -357,7 +355,7 @@ if __name__ == "__main__":
                         os.remove(path_name)
                 except:
                     pass
-            
+
     if inputs['download_data'] or inputs['run_optimization']:
         # Check 2nd round of downloads for incomplete data to exclude from NRMS calculations
         excluded = []
@@ -366,7 +364,7 @@ if __name__ == "__main__":
             if len(files) != 20: # could check for specific files if necessary
                 excluded.append(scen_ind)
         print(excluded)
-    
+
         if data_case == 1:
             #Start of code from ramp_sys_seismic_monitoring_optimization_data.py
             # Define keyword arguments of the system model
@@ -591,11 +589,11 @@ if __name__ == "__main__":
             sorted_subset_nrms = np.sort(subset_nrms)
             # Keep the largest three nrms associated with a given array
             arrays_nrms[array_ind, :, :, :] = sorted_subset_nrms[:, :, -3:]
-            
+
         # Save arrays_nrms data
         file_to_save = os.path.join(output_directory,'arrays_nrms_data_3max_values_{}_scenarios.npz'.format(num_scenarios))
         np.savez_compressed(file_to_save, data=arrays_nrms)
-        
+
         sub_arrays_nrms = arrays_nrms[:, :, :, 0]
         file_to_save = os.path.join(output_directory,'arrays_nrms_data_3rd_max_value_{}_scenarios.npz'.format(num_scenarios))
         np.savez_compressed(file_to_save, data=sub_arrays_nrms)
