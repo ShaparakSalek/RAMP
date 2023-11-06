@@ -471,7 +471,7 @@ class MonitoringDesignSensitivity2D:
         '''
         arae_all=[]
         sen_all=[]
-        th_all=1/np.arange(1,400)
+        th_all=np.exp(-0.1*np.arange(200))
         for th in th_all:
             design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
             arae_all.append(area)
@@ -508,7 +508,7 @@ class MonitoringDesignSensitivity2D:
                         sens2d = self.load_sensitivity_data(self.datadir, yr, wf, ps)
                     arae_all=[]
                     sen_all=[]
-                    for th in 1/np.arange(1,400):
+                    for th in np.exp(-0.1*np.arange(200)):
                         design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
                         arae_all.append(area)
                         sen_all.append(sen_sel)
