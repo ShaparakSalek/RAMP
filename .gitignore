@@ -1,2 +1,4 @@
 *.pyc
 *.stats
+
+documentation/user/build/*
