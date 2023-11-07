@@ -1,0 +1,121 @@
+============================
+Installing Python on Windows
+============================
+
+These are the installation instructions for 64-bit Windows 10 operating system.
+
+Anaconda distribution of Python for Windows can be found here:
+https://www.anaconda.com/products/individual
+The general installation instructions for Windows are provided here:
+https://docs.anaconda.com/anaconda/install/windows/
+
+Note:
+If your computer has an already installed Python distribution/environment that
+is used for work with other tools, we recommend installing Anaconda to help
+with managing different environments.
+
+Note:
+In case you plan to use Python distribution only for working with RAMP
+we suggest to uninstall any previously installed versions of Python and start
+from scratch.
+
+======================================
+Installation Instructions for Anaconda
+======================================
+
+Anaconda provides easily accessible functionality to have different versions
+of Python and its packages installed on the same computer within multiple conda
+environments.
+For all new and preexisting Anaconda distributions we recommend to create
+a separate conda environment to be used only for work with RAMP.
+
+This
+ -- ensures that the existing environment will not be broken;
+ -- creates a possibility to test other Python tools without breaking
+ the environment created for RAMP;
+ -- ensures that any future updates of the packages needed for the proper work
+ of the tools will be properly addressed.
+
+Steps 1 and 2 below can be skipped if you already have Anaconda installed on your computer.
+
+1. Download Anaconda installer file from here: https://www.anaconda.com/download
+Make sure to scroll to the bottom of the page to find the right installer.
+
+2. Run the downloaded Anaconda installer file and
+choose the installation location in the folder for which you have writing
+permissions.
+ -- DO NOT install Anaconda to a directory path that contains spaces or
+ unicode characters.
+ -- DO NOT add Anaconda to your Path environment variable (unless you know that
+ you need it). Once the installation is done, you can start working on creating
+ an environment for RAMP. (Official documentation for Anaconda
+ installation with more details can be found here: https://docs.anaconda.com/free/anaconda/install/windows/)
+ -- You can register Anaconda3 as your default Python if you are going
+ to use Python only for work with RAMP.
+
+3. Find "Anaconda3 (64-bit)" submenu in Windows menu and choose "Anaconda Prompt"
+(or type "Anaconda Prompt" in the seach field in the lower left part of the
+screen). Anaconda prompt is similar to the Windows command prompt but it is
+provided specifically to manage Anaconda distribution.
+
+4. Create an environment which would contain all the Python packages needed
+for proper work of RAMP.
+ -- Navigate to the folder "installation/Windows" in the Anaconda prompt
+ -- Type or copy the following command in the prompt and press Enter
+
+	conda create --name RAMPEnv python=3.10.13 pip
+
+This command will create a setup of the environment needed to run RAMP.
+If conda asks you to proceed, type "y" for yes and press Enter.
+In the command above "RAMPEnv" is a name
+of the environment created for the RAMP tool. The name can be replaced with
+any other suitable name.
+
+5. Once the setup is complete, the newly created environment has to be activated
+by typing in the Anaconda prompt
+
+	conda activate RAMPEnv
+
+6. The next step is to install the rest of the needed packages. Once the environment
+is activated (there will be (RAMPEnv) at the beginning of the command line) type or copy  the following command
+
+	python -m pip install scipy==1.11.3 numpy==1.26.1 pandas==2.1.1 matplotlib==3.8.0 PyYAML==6.0.1 jupyter==1.0.0 spyder==5.4.5 sphinx==7.2.6 six==1.16.0 obspy==1.4.0 requests==2.31.0 h5py==3.10.0 scikit-learn==1.3.2
+
+7. Now the environment "RAMPEnv" is ready to be used. Test the Python and
+RAMP setup by following directions provided at the end of this document.
+
+Tests and script examples can also be run from Spyder, integrated development environment
+(IDE), installed with other packages needed for proper work of RAMP.
+The Spyder IDE allows users to modify and run Python code.
+To access Spyder, find "Anaconda3 (64-bit)" submenu in Windows
+menu and choose "Spyder (RAMPEnv)".
+
+7. To deactivate environment and return to initial set of Anaconda/Python
+packages, type in the Anaconda prompt
+
+	conda deactivate
+
+8. In the future to continue working with RAMP, follow the activation
+step 5 above:
+
+	conda activate RAMPEnv
+
+Step 6 is not needed for reactivation since there is no need to recreate the environment.
+
+Additional information about conda environments can be found here:
+https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment
+
+Cheat sheet for conda environment related commands is here:
+https://conda.io/projects/conda/en/latest/user-guide/cheatsheet.html
+Direct link to the cheat sheet: https://conda.io/projects/conda/en/latest/_downloads/a35958a2a7fa1e927e7dfb61ebcd69a9/conda-4.14.pdf
+
+
+============================================================
+Testing Python and RAMP Setup
+============================================================
+
+After installing Python and required packages please test the Python installation
+and setup of RAMP by running "ramp_test.py" in the folder
+"test" of the RAMP root folder:
+
+	python ramp_test.py

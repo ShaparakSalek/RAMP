@@ -110,8 +110,9 @@ class LookupTableReservoir(ComponentModel):
     A ``ParametersFilename`` keyword can also be specified. It defines the
     names and values of lookup table parameters that were used to create
     the given set of lookup tables. Additionally, it lists the names of the *.csv* files
-    containing simulation data for each of the lookup table in the set.
-    By default, the name of the file with parameters data is assumed to be named
+    containing simulation data for each of the lookup tables in the set (e.g.,
+    results from different parameterizations of a reservoir simulation). By
+    default, the file with parameters data is assumed to be named
     *parameters_and_filenames.csv*. The parameters file should be in a comma
     separated values format. The first M entries in the first row of the file
     are the names of the lookup table parameters which were varied for different
@@ -303,6 +304,10 @@ class LookupTableReservoir(ComponentModel):
         # and maximum, number of linked interpolators
         # -2 means that we didn't assign the value yet
         self.add_default_par('index', value=-2)
+
+        # Setup default observations of the component
+        self.default_obs = {'pressure': 101325.0,
+                            'CO2saturation': 0.0}
 
         # If interpolator family argument is provided, connect to it,
         # otherwise create an 'empty' reservoir component
@@ -974,8 +979,11 @@ class LookupTableReservoir(ComponentModel):
 
         if self.grid_obs_requested:
             interpr_out = interpr(time_point)
+            if time_point == init_time_point:
+                self.initial_pressure = interpr_out['pressure']
             for nm in interpr_out:
                 out[nm] = interpr_out[nm]
+            out['initial_pressure'] = self.initial_pressure
         else:
             if self.num_points == 1:
                 interpr_out = interpr(

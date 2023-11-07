@@ -1,2 +1,5 @@
 *.pyc
 *.stats
+
+documentation/user/build/*
+documentation/use_cases/build/*

@@ -11,6 +11,7 @@ import logging
 import os
 import sys
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 
@@ -144,8 +145,21 @@ class DataContainer(ComponentModel):
 
         Parameters
         ----------
-        data_setup : TYPE
-            DESCRIPTION.
+        data_setup : str or dict, optional
+            Path to the csv file providing setup of multiple data files
+            associated with the given data set if of type string. Dictionary with
+            index type keys providing setup of multiple data files associated with
+            the given data set if of type dict. The keys are integers corresponding
+            to indices of particular simulation. The values are dictionaries with
+            the following keys
+                'signature': dict, optional, can contain information about parameters
+                that can be sampled
+                'folder': str, optional, path to a specific if data files for different
+                simulations are kept in separate folders. key is optional if
+                subsequent keys containing pathes also contain information about folders.
+                't1', ..., 'tn' - keys corresponding to data at different time
+                points. n is a number of time points provided with time_points
+                argument.
         data_directory : str, optional
             Path to the folder containing data (and possibly setup and time points)
             files. The default is None.
@@ -166,7 +180,8 @@ class DataContainer(ComponentModel):
             # find files located in relative locations with respect to RAMP
             # directory, for example.
             if os.path.isfile(setup_file):
-                return self.read_data_setup_file(setup_file)
+                data_setup_dict = self.read_data_setup_file(setup_file)
+                self.configure_data_setup(data_setup_dict)
             else:
                 raise FileNotFoundError('File {} is not found.'.format(setup_file))
         else:
@@ -186,9 +201,9 @@ class DataContainer(ComponentModel):
             the following keys
                 'signature': dict, optional, can contain information about parameters
                 that can be sampled
-                'folder': str, optional, path to a specific if data files for different
+                'folder': str, optional, path to a specific folder if data files for different
                 simulations are kept in separate folders. key is optional if
-                subsequent keys containing pathes also contain information about folders.
+                subsequent keys containing paths also contain information about folders.
                 't1', ..., 'tn' - keys corresponding to data at different time
                 points. n is a number of time points provided with time_points
                 argument.
@@ -236,23 +251,58 @@ class DataContainer(ComponentModel):
 
 
     @staticmethod
-    def read_data_setup_file(setup_file):
+    def read_data_setup_file(data_setup_file):
         """
-        Rea
+        Read file containing information about setup associated with given
+        component.
 
         Parameters
         ----------
-        data : TYPE
-            DESCRIPTION.
+        data : str
+            Path to the csv file providing setup of multiple data files
+            associated with the given data set.
 
         Returns
         -------
-        None.
-
+        Dictionary needed for the data setup attribute of component .
         """
-        # TODO need to setup self.data_setup dictionary, self.signatures,
-        # self.indices, self.num_indices based on corresponding files provided
-        pass
+        # Read file content
+        df = pd.read_csv(data_setup_file, delimiter=',')
+
+        # Get names of columns
+        header = list(df.columns.values)
+
+        if header[0] != 'index':
+            err_msg = "".join([
+                "The first column of the file {} should contain the indices ",
+                "associated with a given data set (filename) and ",
+                "be named 'index'. Please update the file by adding ",
+                "the corresponding column and try again. "]).format(data_setup_file)
+            logging.error(err_msg)
+            raise NameError(err_msg)
+
+        # Get indices
+        indices = df['index'].iloc[:].values
+        num_indices = len(indices)
+
+        # Initialize dictionary with data
+        setup_data = {ind: {'signature': {}} for ind in indices}
+        # Go over names in header
+        for nm in header[1:]:
+            if nm == 'folder':
+                for ind, scen in enumerate(indices):
+                    setup_data[scen]['folder'] = df['folder'].iloc[ind]
+            elif nm[0] == 't':
+                try:
+                    t_ind = int(nm[1:])
+                except ValueError:
+                    for ind, scen in enumerate(indices):
+                        setup_data[scen]['signature'][nm] = df[nm].iloc[ind]
+                else:
+                    for ind, scen in enumerate(indices):
+                        setup_data[scen][nm] = df[nm].iloc[ind]
+
+        return setup_data
 
     def check_input_parameters(self, p):
         """
@@ -424,9 +474,12 @@ def get_indices(complete_array, sub_array):
     None.
 
     """
+    # Find the largest value of complete array
+    max_t = complete_array[-1]
     indices = []
     for elem in sub_array:
-        indices.append(np.where(complete_array==elem)[0][0])
+        if elem <= max_t:
+            indices.append(np.where(complete_array==elem)[0][0])
     return indices
 
 
@@ -479,9 +532,6 @@ def process_time_points(time_points, data_directory=None,
     raise TypeError('Argument time_points is of wrong type.')
 
 
-
-
-
 def test_scenario_velocity():
     # Define keyword arguments of the system model
     final_year = 90
@@ -491,8 +541,8 @@ def test_scenario_velocity():
 
     # Setup required information for data container before creating one
     obs_name = 'velocity'
-    data_directory = os.path.join('..', '..','..', '..', 'data', 'user', 'velocity')
-    output_directory = os.path.join('..', '..','..', '..', 'examples', 'user',
+    data_directory = os.path.join('..', '..', '..', '..', 'data', 'user', 'velocity')
+    output_directory = os.path.join('..', '..', '..', '..', 'examples', 'user',
                                     'output', 'test_data_container')
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)

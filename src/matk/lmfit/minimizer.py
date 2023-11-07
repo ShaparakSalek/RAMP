@@ -13,8 +13,7 @@ function-to-be-minimized (residual function) in terms of these Parameters.
 
 from numpy import (dot, eye, ndarray, ones_like,
                    sqrt, take, transpose, triu)
-from numpy.dual import inv
-from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgError, inv
 
 from scipy.optimize import leastsq as scipy_leastsq
 from scipy.optimize import fmin as scipy_fmin
@@ -516,7 +515,7 @@ def minimize(fcn, params, method='leastsq', args=None, kws=None,
     return fitter
 
 def make_paras_and_func(fcn, x0, used_kwargs=None):
-    """nach 
+    """nach
     A function which takes a function a makes a parameters-dict
     for it.
 
@@ -530,7 +529,7 @@ def make_paras_and_func(fcn, x0, used_kwargs=None):
     defaults = args[-1]
     len_def = len(defaults) if defaults is not None else 0
     # have_defaults = args[-len(defaults):]
-    
+
     args_without_defaults = len(args[0])- len_def
 
     if len(x0) < args_without_defaults:
@@ -549,14 +548,11 @@ def make_paras_and_func(fcn, x0, used_kwargs=None):
     def func(para):
         "wrapped func"
         kwdict = {}
-        
+
         for arg in list(used_kwargs.keys()):
             kwdict[arg] = para[arg].value
 
         vals = [para[i].value for i in p]
         return fcn(*vals[:len(x0)], **kwdict)
-        
+
     return p, func
-
-
-

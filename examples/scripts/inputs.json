@@ -1,0 +1,26 @@
+{
+ "edx_api_key": "your-api-key-here",
+ "download_data": true,
+ "run_optimization": true,
+ "plot_results": true,
+ "data_case": 1,
+ "scenarios": "1-50",
+ "directory_seismic_data": "../../data/user/seismic",
+ "directory_velocity_data": "../../data/user/velocity",
+ "directory_nrms_data": "../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data",
+ "directory_plots": "../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data",
+ # if the list of source locations are specified as a list, the list is used
+ "sources": [4240, 4680, 5120, 5600, 6040, 6480, 6920, 7400, 7840],
+ # otherwise, evenly spaced intervals are computed
+ "sourceNum": 9,
+ "sourceMin": 4240,
+ "sourceMax": 7840,
+ "receiversNum": 101,
+ "receiversMin": 4000,
+ "receiversMax": 8000,
+ "seismic_total_duration": 2.5,
+ "seismic_sampling_interval": 0.002,
+ "threshold_nrms": 50,
+ "stage1": 4,
+ "stage2": 9,
+}

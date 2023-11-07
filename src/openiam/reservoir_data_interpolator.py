@@ -169,6 +169,25 @@ class AnimatedScatterPlot(object):
         return self.scat,
 
 
+def data_scatter_plot(x, y, data, title=None, cmap='viridis', cbar_label=None,
+                      vmin=None, vmax=None):
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111)
+    im = ax.scatter(x, y, c=data, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    ax.set_aspect('equal', 'datalim')
+    if cbar_label is None:
+        cbar_label = ''
+    cbar = fig.colorbar(im, label=cbar_label, ax=ax)
+    if cmap == 'binary':
+        cbar.ax.set_yticks([0, 1])
+        cbar.ax.set_yticklabels([0, 1])
+    if title is not None:
+        ax.set_title(title)
+    return fig, ax
+
+
 class ReservoirDataInterpolator(object):
     """ NRAP-Open-IAM ReservoirDataInterpolator class. """
     def __init__(self, name, parent, header_file_dir, time_file, data_file, index,
@@ -393,7 +412,7 @@ class ReservoirDataInterpolator(object):
         if 'z' in self.data_headers:
             constant_obs['depth'] = 'z'  # saving key where the data is kept
 
-        coord_keys = ['x', 'y', 'z', 'ijk', 't']
+        coord_keys = ['x', 'y', 'z', 'ij', 'ijk', 't']
         all_names = [nm for nm in self.data_headers if nm not in coord_keys]
 
         # Loop over all observation names in the header except coordinates
@@ -636,15 +655,12 @@ class ReservoirDataInterpolator(object):
 
             # Plot observation
             if unchanging_plot:
-                fig = plt.figure(figsize=(8, 8))
-                ax = fig.add_subplot(111)
-                im = ax.scatter(self.points[:, 0], self.points[:, 1], c=data_colors)
-                ax.set_xlabel('x [m]')
-                ax.set_ylabel('y [m]')
-                ax.set_aspect('equal', 'datalim')
-                fig.colorbar(im, label=self.data_units(nm), ax=ax)
                 t = 0 if time is None else time
-                ax.set_title(self.title_names[nm].format(t))
+                fig, ax = data_scatter_plot(
+                    self.points[:, 0], self.points[:, 1], data_colors,
+                    title=self.title_names[nm].format(t),
+                    cbar_label=self.data_units(nm))
+
                 plt.show()
 
     def calculate_csv_based_output(self, dtime, vtx=None, wts=None):
