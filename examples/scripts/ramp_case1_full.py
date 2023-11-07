@@ -80,6 +80,8 @@ except:
 # ====================================
 # Duplicate options commented out in detailed setup below
 # Use your API-Key
+#api_key = "db3f43a7-a871-4608-b349-48c8af2b3be2"
+#api_key = '2fb3645b-5657-4986-bf16-4fad657fbb45'
 api_key = inputs['edx_api_key']
 
 # Choose what data needs to be downloaded
@@ -286,13 +288,13 @@ if __name__ == "__main__":
             if len(files) != 20: # could check for specific files if necessary
                 incomplete.append(scen_ind)
         print(f'incomplete scenarios (1st round): {incomplete}')
-
+    
         # Delete incomplete data folders
         for scen_ind in incomplete:
             files = os.sep.join([output_directory, base_name.format(scen_ind)])
             if os.path.isdir(files):
                 shutil.rmtree(files)
-
+    
         # Run download script again on deleted files
         # Get URL of files to be downloaded
         urls = {}
@@ -304,7 +306,7 @@ if __name__ == "__main__":
                 scen_ind = int(res['name'][6:10])  # valid for vp_model
             if scen_ind in incomplete: ### Only change to download script is list of files ###
                 urls[scen_ind] = res['url']
-
+    
         # Download files
         for scen_ind, url_link in urls.items():
             print(f'scen_ind: {scen_ind}')
@@ -355,7 +357,7 @@ if __name__ == "__main__":
                         os.remove(path_name)
                 except:
                     pass
-
+            
     if inputs['download_data'] or inputs['run_optimization']:
         # Check 2nd round of downloads for incomplete data to exclude from NRMS calculations
         excluded = []
@@ -364,7 +366,7 @@ if __name__ == "__main__":
             if len(files) != 20: # could check for specific files if necessary
                 excluded.append(scen_ind)
         print(excluded)
-
+    
         if data_case == 1:
             #Start of code from ramp_sys_seismic_monitoring_optimization_data.py
             # Define keyword arguments of the system model
@@ -589,11 +591,11 @@ if __name__ == "__main__":
             sorted_subset_nrms = np.sort(subset_nrms)
             # Keep the largest three nrms associated with a given array
             arrays_nrms[array_ind, :, :, :] = sorted_subset_nrms[:, :, -3:]
-
+            
         # Save arrays_nrms data
         file_to_save = os.path.join(output_directory,'arrays_nrms_data_3max_values_{}_scenarios.npz'.format(num_scenarios))
         np.savez_compressed(file_to_save, data=arrays_nrms)
-
+        
         sub_arrays_nrms = arrays_nrms[:, :, :, 0]
         file_to_save = os.path.join(output_directory,'arrays_nrms_data_3rd_max_value_{}_scenarios.npz'.format(num_scenarios))
         np.savez_compressed(file_to_save, data=sub_arrays_nrms)
@@ -697,7 +699,7 @@ if __name__ == "__main__":
         plans9up = find_unique_pareto(plans9)
         plans9up = list(set(plans9up).union(find_different_density_same_timestep(plans9,produced_arrays)))
 
-        plans = { 'stage1':[plans1,plans2,plans3],'stage2':[plans4,plans5,plans6],'stage3':[plans6,plans8,plans9] }
+        plans = { 'stage1':[plans1,plans2,plans3],'stage2':[plans4,plans5,plans6],'stage3':[plans7,plans8,plans9] }
         json.dump({'arrays':configuration.arrays,'plans':plans},open('output.json','w'))
         yaml.dump({'arrays':configuration.arrays,'plans':plans},open('output.yaml','w'))
         pickle.dump({'arrays':configuration.arrays,'plans':plans},open('output.dat','wb'))
@@ -750,30 +752,35 @@ if __name__ == "__main__":
         x8 += np.max([np.max(x4),np.max(x5),np.max(x6)])
         x9 += np.max([np.max(x4),np.max(x5),np.max(x6)])
 
-        plt.figure(figsize=(14,4))
+        plt.figure(figsize=(16,5))
 
         plt.subplot(131)
         plt.title('Stage 1 (0-%i years)'%((inputs['stage1']-1)*10),fontsize=14)
         plt.scatter(x1, 10*y1, s=10, c='blue', label='1 array, 1 time')
         plt.scatter(x2, 10*y2, s=10, c='red', zorder=1, label='2 arrays/times')
         plt.scatter(x3, 10*y3, s=10, c='green', zorder=1, label='3 arrays/times')
-
         plt.locator_params(axis='x', integer=True, tight=True)
         plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
         plt.ylabel('Average Time to First Detection [years]', fontsize=14)
-        plt.legend(bbox_to_anchor=(-0.2,+1))
+        plt.legend(bbox_to_anchor=(-0.23,+1))
 
         plt.subplot(132)
         plt.title('Stage 2 (%i-%i years)'%((inputs['stage1'])*10,(inputs['stage2']-1)*10),fontsize=14)
-        plt.scatter(x4, 10*y4, s=10, c='blue', label='1 array, 1 time')
-        plt.scatter(x5, 10*y5, s=10, c='red', zorder=1, label='2 arrays/times')
-        plt.scatter(x6, 10*y6, s=10, c='green', zorder=1, label='3 arrays/times')
+        plt.scatter(x4, 10*inputs['stage1']+10*y4, s=10, c='blue', label='1 array, 1 time')
+        plt.scatter(x5, 10*inputs['stage1']+10*y5, s=10, c='red', zorder=1, label='2 arrays/times')
+        plt.scatter(x6, 10*inputs['stage1']+10*y6, s=10, c='green', zorder=1, label='3 arrays/times')
+        plt.locator_params(axis='x', integer=True, tight=True)
+        plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
+        plt.ylabel('Average Time to First Detection [years]', fontsize=14)
 
         plt.subplot(133)
         plt.title('Stage 3 (%i-200 years)'%(inputs['stage2']*10),fontsize=14)
-        plt.scatter(x7, 10*y7, s=10, c='blue', label='1 array, 1 time')
-        plt.scatter(x8, 10*y8, s=10, c='red', zorder=1, label='2 arrays/times')
-        plt.scatter(x9, 10*y9, s=10, c='green', zorder=1, label='3 arrays/times')
+        plt.scatter(x7, 10*inputs['stage2']+10*y7, s=10, c='blue', label='1 array, 1 time')
+        plt.scatter(x8, 10*inputs['stage2']+10*y8, s=10, c='red', zorder=1, label='2 arrays/times')
+        plt.scatter(x9, 10*inputs['stage2']+10*y9, s=10, c='green', zorder=1, label='3 arrays/times')
+        plt.locator_params(axis='x', integer=True, tight=True)
+        plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
+        plt.ylabel('Average Time to First Detection [years]', fontsize=14)
 
         plt.savefig('%s/multi_stage_optimization.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
         plt.close()
@@ -807,11 +814,12 @@ if __name__ == "__main__":
             iReceivers = configuration.arrays[iArray]['receivers']
 
             xyz = np.array(configuration.sources.coordinates[iSource])
-            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1, label='Sources')
 
             xyz = np.array(configuration.receivers.coordinates[iReceivers])
-            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0, label='Receivers')
 
+            plt.legend()
             ax.set_xlim([xmin,xmax])
             ax.set_xlabel('Easting [m]',fontsize=14)
             ax.set_ylabel('Northing [m]',fontsize=14)
@@ -842,7 +850,7 @@ if __name__ == "__main__":
         fig = plt.figure(figsize=(24,8))
         kk=1
         for deployment in plans6[stage2_best][0]:
-            ax = fig.add_subplot(1,len(plans3[stage2_best]),kk,projection='3d')
+            ax = fig.add_subplot(1,len(plans6[stage2_best]),kk,projection='3d')
             iArray = deployment[0]
             iTime  = deployment[1]
             print(iArray,configuration.arrays[iArray])
@@ -851,11 +859,12 @@ if __name__ == "__main__":
             iReceivers = configuration.arrays[iArray]['receivers']
 
             xyz = np.array(configuration.sources.coordinates[iSource])
-            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1,label='Sources')
 
             xyz = np.array(configuration.receivers.coordinates[iReceivers])
-            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0,label='Receivers')
 
+            plt.legend()
             ax.set_xlim([xmin,xmax])
             ax.set_xlabel('Easting [m]',fontsize=14)
             ax.set_ylabel('Northing [m]',fontsize=14)
@@ -895,11 +904,12 @@ if __name__ == "__main__":
             iReceivers = configuration.arrays[iArray]['receivers']
 
             xyz = np.array(configuration.sources.coordinates[iSource])
-            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1)
+            ax.scatter(xyz[0],xyz[1],xyz[2],s=50,c='b',marker='*',zorder=1,label='Sources')
 
             xyz = np.array(configuration.receivers.coordinates[iReceivers])
-            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0)
+            ax.scatter(xyz[:,0],xyz[:,1],xyz[:,2],s=10,c='r',zorder=0,label='Receivers')
 
+            plt.legend()
             ax.set_xlim([xmin,xmax])
             ax.set_xlabel('Easting [m]',fontsize=14)
             ax.set_ylabel('Northing [m]',fontsize=14)
@@ -909,18 +919,78 @@ if __name__ == "__main__":
         plt.savefig('%s/arrays_stage3.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
         plt.close()
 
-        tt = time_points
-        dd = []
-        for i in range(nrmsBool.shape[2]):
-            print( i,np.any(nrmsBool[:,:,:i],axis=(0,2)), np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) )
-            dd += [ np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) ]
-        print(nrmsBool.shape)
-        print(tt,dd)
-        tt,dd = scatter2step(tt,dd)
-        print(tt,dd)
+
 
         plt.figure(figsize=(10,8))
-        plt.plot(tt,dd)
+
+        #tt = []
+        #dd = []
+        #for i in range(nrmsBool.shape[2]):
+        #    print( i,np.any(nrmsBool[:,:,:i],axis=(0,2)), np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) )
+        #    tt += [ 10*i ]
+        #    dd += [ np.sum(np.any(nrmsBool[:,:,:i],axis=(0,2))) ]
+        #tt,dd = scatter2step(tt,dd)
+        #plt.plot(tt,dd)
+
+        print('nrmsBool.shape',nrmsBool.shape)
+
+
+        print(plans3[stage1_best])
+        tt  = [0]
+        dd  = [0]
+        for deployment in plans3[stage1_best][0]: tt += [ 10*deployment[1] ]
+
+        detections = nrmsBool[plans3[stage1_best][0][0][0],:,plans3[stage1_best][0][0][1]]
+        #print(plans3[stage1_best][0][0][0],plans3[stage1_best][0][0][1])
+        #print(detections)
+        #print(np.sum(detections))
+        #exit()
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans3[stage1_best][0][1][0],:,plans3[stage1_best][0][1][1]]) ]
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans3[stage1_best][0][2][0],:,plans3[stage1_best][0][2][1]]) ]
+        dd += [ np.sum( detections ) ]
+
+        tt += [200]
+        dd += [dd[-1]]
+        tt,dd = scatter2step(tt,dd)
+        plt.plot(tt,dd,label='Stage 1')
+
+        print(plans6[stage2_best])
+        tt  = [0]
+        dd  = [0]
+        for deployment in plans6[stage2_best][0]: tt += [ 10*inputs['stage1']+10*deployment[1] ]
+
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans6[stage2_best][0][0][0],:,plans6[stage2_best][0][0][1]]) ]
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans6[stage2_best][0][1][0],:,plans6[stage2_best][0][1][1]]) ]
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans6[stage2_best][0][2][0],:,plans6[stage2_best][0][2][1]]) ]
+        dd += [ np.sum( detections ) ]
+
+        tt += [200]
+        dd += [dd[-1]]
+        tt,dd = scatter2step(tt,dd)
+        plt.plot(tt,dd,label='Stage 2')
+
+        print(plans9[stage3_best])
+        tt  = [0]
+        dd  = [0]
+        for deployment in plans9[stage3_best][0]: tt += [ 10*inputs['stage2']+10*deployment[1] ]
+
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans9[stage3_best][0][0][0],:,plans9[stage3_best][0][0][1]]) ]
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans9[stage3_best][0][1][0],:,plans9[stage3_best][0][1][1]]) ]
+        dd += [ np.sum( detections ) ]
+        detections = [ a or b for a,b in zip(detections,nrmsBool[plans9[stage3_best][0][2][0],:,plans9[stage3_best][0][2][1]]) ]
+        dd += [ np.sum( detections ) ]
+
+        tt += [200]
+        dd += [dd[-1]]
+        tt,dd = scatter2step(tt,dd)
+        plt.plot(tt,dd,label='Stage 3')
+
+        plt.legend()
         plt.xlabel('Time [years]',fontsize=14)
         plt.ylabel('Number of Leaks Detectable',fontsize=14)
         plt.savefig('%s/detection_breakthrough_curve.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
