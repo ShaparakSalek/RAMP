@@ -1,0 +1,60 @@
+domain:
+  # Number of grid points in the x direction
+  nx: 1467
+  # Number of grid points in the z direction
+  nz: 335
+  # Horizontal interval
+  dx: 7.5
+  # Depth interval (also applies to dx)
+  dz: 7.5
+
+source:
+  # Number of sources
+  ns: 146
+  # Source interval (m)
+  ds: 75.0
+  # Year when fault leakage begins
+  t1: 78
+
+
+receiver:
+  # Number of receivers
+  nr: 1467
+  # Receiver interval (m)
+  dr: 7.5
+
+flags:
+  # flag to control the normalization of the sensivity
+  sen_nor: 0
+  # flag to control wether or not to plot sensitivity vs "data to collect" plots
+  dtc_flag: 0
+  # flag for yaml file output, set as 1 to use yaml format output, 0 for text file
+  output_yaml: 1
+  # flag to use "segy" format, 0 to read data from bin files directly
+  segy_read: 1
+
+sensitivities:
+  # List of years for monitoring
+  years: [80, 85, 90, 95, 100, 125]
+  # Maximum sensitivity values
+  senMax: [10000000.0, 10000000.0, 10000000.0, 1000000000.0]
+  # Threshold values for sensitivity
+  thresholds: [0.2, 0.6]
+  # ks parameter value
+  ks: 4
+  # kr parameter value
+  kr: 4
+  # User defined data to collect percentage
+  target_dtc: 5
+  # wavefield of the seismic wave
+  wavefield: ['P', 'S']
+  # velocity type
+  vpvs: ['Vp', 'Vs']
+  # units used for model plot
+  units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}
+
+file_path:
+  # Directory path for data
+  datadir: ./example_data/
+  # Root directory path for output
+  outpre: ./output/
