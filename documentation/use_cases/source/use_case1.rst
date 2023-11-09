@@ -101,3 +101,7 @@ plan by determining ideal locations and timings for seismic surveys.
 .. image:: images/uc1/error2.png
    :align: center
    :alt: Error Messages #2
+
+The base output file is exported in JSON, YAML and binary formats, and includes all monitoring plans ever constructed by the algorithm, which can be unwieldly. Therefore a summary output file is also generated which only includes a limited number of the best monitoring plans. The user can define how many monitoring plans in the inputs file (suggested 3-5 options).
+
+The summary output file includes the list of only the seismic arrays included in the monitoring plans, where each seismic array specifies the number of receivers, locations of the receivers, and location of the source. The list of monitoring plans are labelled and organized into 3 stages, with the monitoring plans for each stage including the arrays and deployment times, the number of leakage scenarios detected, the list of particular scenarios detected, and the average time to detection.
