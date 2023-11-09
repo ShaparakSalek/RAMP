@@ -8,6 +8,17 @@ PNNL (Battelle)
 import numpy as np
 
 
+def convertPlan_tuple2dict(plan):
+    #print('plan',plan)
+    output = {}
+    output['deployments'] = []
+    for deployment in plan[0]:
+        output['deployments'] += [{'array':deployment[0],'time':10.0*deployment[1]}]
+    output['scenarios_detected'] = list(plan[3])
+    output['number_scenarios_detected'] = len(plan[3])
+    output['time_to_detection'] = 10.0*float(plan[2])
+    return output
+
 def pareto(det, ttd):
     """
     Compute the Pareto rank of each pair of detection and time-to-detection values
@@ -31,7 +42,7 @@ def pareto(det, ttd):
                     pass
                 elif ranks[i] < thisRank or ranks[j] < thisRank:
                     pass
-                elif ttd_j < ttd_i and det[j] > det[i]:
+                elif (ttd_j <= ttd_i and det[j] >= det[i]) and (ttd_j < ttd_i or det[j] > det[i]):
                     nextRank += [i]
                     ranks[i] = thisRank + 1
                     break

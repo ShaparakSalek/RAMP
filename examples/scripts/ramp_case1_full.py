@@ -27,6 +27,10 @@ import json
 import yaml
 import pickle
 
+import scipy
+import scipy.spatial
+from scipy.spatial import distance_matrix
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -61,6 +65,35 @@ from ramp.optimize.ttd_det_optimization import *
 #from ramp.seismic_configuration import SeismicSurveyConfiguration
 #from ramp.seismic_monitoring import SeismicMonitoring
 #from ramp.seismic_configuration import five_n_receivers_array_creator
+
+def subsample_to_n_points(points, n):
+    """
+    Subsample a set of points to the most uniformly-distributed n points,
+    by returning the indexes of the sparsified points.
+
+    :param points: List of (x, y) coordinates
+    :param n: Desired number of points
+    :return: List of indexes of subsampled points
+    """
+    points_array = np.array(points)
+    points_array[:,0] -= np.min(points_array[:,0])
+    points_array[:,0] /= np.max(points_array[:,0])
+    points_array[:,1] -= np.min(points_array[:,1])
+    points_array[:,1] /= np.max(points_array[:,1])
+    indexes = np.arange(len(points_array))  # Create an array of indexes
+
+    while len(points_array) > n:
+        dists = distance_matrix(points_array, points_array)
+        np.fill_diagonal(dists, np.inf)
+        min_dist_idx = np.argmin(dists)
+        delete_idx = np.unravel_index(min_dist_idx, dists.shape)[0]
+
+        # Delete the point with the minimum distance and its index
+        points_array = np.delete(points_array, delete_idx, axis=0)
+        indexes = np.delete(indexes, delete_idx)
+
+    return list(indexes)
+
 
 if len(sys.argv)==1:
   raise Exception('''Please include an input argument specifying the YAML or JSON filename.
@@ -599,19 +632,19 @@ if __name__ == "__main__":
         sub_arrays_nrms = arrays_nrms[:, :, :, 0]
         file_to_save = os.path.join(output_directory,'arrays_nrms_data_3rd_max_value_{}_scenarios.npz'.format(num_scenarios))
         np.savez_compressed(file_to_save, data=sub_arrays_nrms)
-        print(arrays_nrms.shape)
-        print(sub_arrays_nrms.shape)
+        #print(arrays_nrms.shape)
+        #print(sub_arrays_nrms.shape)
 
         stage1 = inputs['stage1']
         stage2 = inputs['stage2']
 
         num_arrays = configuration.num_arrays
         produced_arrays = configuration._arrays
-        print(len(produced_arrays))
+        #print(len(produced_arrays))
         threshold = inputs['threshold_nrms']
         nrms     = sub_arrays_nrms
         nrmsBool = np.array( sub_arrays_nrms>threshold, dtype='bool' )
-        print(nrmsBool.shape)
+        #print(nrmsBool.shape)
 
         det_best = 0
         ttd_best = []
@@ -633,6 +666,10 @@ if __name__ == "__main__":
         plans3up = find_unique_pareto(plans3)
         plans3up = list(set(plans3up).union(find_different_density_same_timestep(plans3,produced_arrays)))
 
+        x1 = np.array([plan[1] for plan in plans1])
+        y1 = np.array([plan[2] for plan in plans1])
+        x2 = np.array([plan[1] for plan in plans2])
+        y2 = np.array([plan[2] for plan in plans2])
         x3 = np.array([plan[1] for plan in plans3])
         y3 = np.array([plan[2] for plan in plans3])
         r3 = pareto(x3, y3)
@@ -642,10 +679,10 @@ if __name__ == "__main__":
 
         detected=set()
 
-        print(detected,len(detected))
+        #print(detected,len(detected))
         for iArray in plans3[selectedPlan][0]:
             detected.update(np.where(nrmsBool[iArray[0],:,iArray[1]])[0])
-        print(detected,len(detected))
+        #print(detected,len(detected))
 
         undetected=np.array(list(set(range(nrmsBool.shape[1]))-detected))
 
@@ -699,10 +736,73 @@ if __name__ == "__main__":
         plans9up = find_unique_pareto(plans9)
         plans9up = list(set(plans9up).union(find_different_density_same_timestep(plans9,produced_arrays)))
 
+        x7 = np.array([plan[1] for plan in plans7])
+        y7 = np.array([plan[2] for plan in plans7])
+        r7 = pareto(x7, y7)
+        x8 = np.array([plan[1] for plan in plans8])
+        y8 = np.array([plan[2] for plan in plans8])
+        r8 = pareto(x8, y8)
+        x9 = np.array([plan[1] for plan in plans9])
+        y9 = np.array([plan[2] for plan in plans9])
+        r9 = pareto(x9, y9)
+
         plans = { 'stage1':[plans1,plans2,plans3],'stage2':[plans4,plans5,plans6],'stage3':[plans7,plans8,plans9] }
         json.dump({'arrays':configuration.arrays,'plans':plans},open('output.json','w'))
         yaml.dump({'arrays':configuration.arrays,'plans':plans},open('output.yaml','w'))
         pickle.dump({'arrays':configuration.arrays,'plans':plans},open('output.dat','wb'))
+
+        arrays_selected=[]
+        plans_selected={}
+        plans_selected['stage1']=[]
+        plans_selected['stage2']=[]
+        plans_selected['stage3']=[]
+
+        xx = np.array(x1.tolist()+x2.tolist()+x3.tolist())
+        yy = 10*np.array(y1.tolist()+y2.tolist()+y3.tolist())
+        rr = pareto( xx,yy )
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        plans = plans1+plans2+plans3
+        for i in ii:
+            plans_selected['stage1'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            for deployment in plans[np.where(rr==1)[0][i]][0]:
+                arrays_selected += [ deployment[0] ]
+
+        xx = np.array(x4.tolist()+x5.tolist()+x6.tolist())
+        yy = 10*np.array(y4.tolist()+y5.tolist()+y6.tolist())
+        rr = pareto( xx,yy )
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        plans = plans4+plans5+plans6
+        for i in ii:
+            plans_selected['stage2'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            plans_selected['stage2'][-1]['time_to_detection'] += 10.0*inputs['stage1']
+            for i in range(len(plans_selected['stage2'][-1]['deployments'])):
+                plans_selected['stage2'][-1]['deployments'][i]['time'] += 10.0*inputs['stage1']
+            for deployments in plans[np.where(rr==1)[0][i]][0]:
+                arrays_selected += [ deployments[0] ]
+
+        xx = np.array(x7.tolist()+x8.tolist()+x9.tolist())
+        yy = 10*np.array(y7.tolist()+y8.tolist()+y9.tolist())
+        rr = pareto( xx,yy )
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        plans = plans7+plans8+plans9
+        for i in ii:
+            plans_selected['stage3'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            plans_selected['stage3'][-1]['time_to_detection'] += 10.0*inputs['stage2']
+            for i in range(len(plans_selected['stage3'][-1]['deployments'])):
+                plans_selected['stage3'][-1]['deployments'][i]['time'] += 10.0*inputs['stage2']
+            for deployments in plans[np.where(rr==1)[0][i]][0]:
+                arrays_selected += [ deployments[0] ]
+
+        arrays_selected = list(set(arrays_selected))
+        arrays_summary = {}
+        for i in arrays_selected:
+            arrays_summary[i] = configuration.arrays[i]
+
+        print('plans_selected',plans_selected)
+
+        json.dump({'arrays':arrays_summary,'plans':plans_selected},open('output_summary.json','w'))
+        yaml.dump({'arrays':arrays_summary,'plans':plans_selected},open('output_summary.yaml','w'))
+        pickle.dump({'arrays':arrays_summary,'plans':plans_selected},open('output_summary.dat','wb'))
 
     if inputs['plot_results']:
 
@@ -759,6 +859,15 @@ if __name__ == "__main__":
         plt.scatter(x1, 10*y1, s=10, c='blue', label='1 array, 1 time')
         plt.scatter(x2, 10*y2, s=10, c='red', zorder=1, label='2 arrays/times')
         plt.scatter(x3, 10*y3, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x1.tolist()+x2.tolist()+x3.tolist())
+        yy = 10*np.array(y1.tolist()+y2.tolist()+y3.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],yy[rr==1][ii], s=80, c='gray', zorder=0, label='%i selected'%inputs['number_proposals'])
+
         plt.locator_params(axis='x', integer=True, tight=True)
         plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
         plt.ylabel('Average Time to First Detection [years]', fontsize=14)
@@ -769,6 +878,15 @@ if __name__ == "__main__":
         plt.scatter(x4, 10*inputs['stage1']+10*y4, s=10, c='blue', label='1 array, 1 time')
         plt.scatter(x5, 10*inputs['stage1']+10*y5, s=10, c='red', zorder=1, label='2 arrays/times')
         plt.scatter(x6, 10*inputs['stage1']+10*y6, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x4.tolist()+x5.tolist()+x6.tolist())
+        yy = 10*np.array(y4.tolist()+y5.tolist()+y6.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],10*inputs['stage1']+yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],10*inputs['stage1']+yy[rr==1][ii], s=80, c='gray', zorder=0, label='%i selected'%inputs['number_proposals'])
+
         plt.locator_params(axis='x', integer=True, tight=True)
         plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
         plt.ylabel('Average Time to First Detection [years]', fontsize=14)
@@ -778,12 +896,86 @@ if __name__ == "__main__":
         plt.scatter(x7, 10*inputs['stage2']+10*y7, s=10, c='blue', label='1 array, 1 time')
         plt.scatter(x8, 10*inputs['stage2']+10*y8, s=10, c='red', zorder=1, label='2 arrays/times')
         plt.scatter(x9, 10*inputs['stage2']+10*y9, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x7.tolist()+x8.tolist()+x9.tolist())
+        yy = 10*np.array(y7.tolist()+y8.tolist()+y9.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],10*inputs['stage2']+yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],10*inputs['stage2']+yy[rr==1][ii], s=80, c='gray', zorder=0, label='%i selected'%inputs['number_proposals'])
+
         plt.locator_params(axis='x', integer=True, tight=True)
         plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
         plt.ylabel('Average Time to First Detection [years]', fontsize=14)
 
         plt.savefig('%s/multi_stage_optimization.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
         plt.close()
+
+
+
+        plt.figure(figsize=(16,5))
+
+        plt.subplot(131)
+        plt.title('Stage 1 (0-%i years)'%((inputs['stage1']-1)*10),fontsize=14)
+        #plt.scatter(x1, 10*y1, s=10, c='blue', label='1 array, 1 time')
+        #plt.scatter(x2, 10*y2, s=10, c='red', zorder=1, label='2 arrays/times')
+        #plt.scatter(x3, 10*y3, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x1.tolist()+x2.tolist()+x3.tolist())
+        yy = 10*np.array(y1.tolist()+y2.tolist()+y3.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],yy[rr==1][ii], s=80, c='gray', zorder=0)
+
+        plt.locator_params(axis='x', integer=True, tight=True)
+        plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
+        plt.ylabel('Average Time to First Detection [years]', fontsize=14)
+        plt.legend(bbox_to_anchor=(-0.23,+1))
+
+        plt.subplot(132)
+        plt.title('Stage 2 (%i-%i years)'%((inputs['stage1'])*10,(inputs['stage2']-1)*10),fontsize=14)
+        #plt.scatter(x4, 10*inputs['stage1']+10*y4, s=10, c='blue', label='1 array, 1 time')
+        #plt.scatter(x5, 10*inputs['stage1']+10*y5, s=10, c='red', zorder=1, label='2 arrays/times')
+        #plt.scatter(x6, 10*inputs['stage1']+10*y6, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x4.tolist()+x5.tolist()+x6.tolist())
+        yy = 10*np.array(y4.tolist()+y5.tolist()+y6.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],10*inputs['stage1']+yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],10*inputs['stage1']+yy[rr==1][ii], s=80, c='gray', zorder=0)
+
+        plt.locator_params(axis='x', integer=True, tight=True)
+        plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
+        plt.ylabel('Average Time to First Detection [years]', fontsize=14)
+
+        plt.subplot(133)
+        plt.title('Stage 3 (%i-200 years)'%(inputs['stage2']*10),fontsize=14)
+        #plt.scatter(x7, 10*inputs['stage2']+10*y7, s=10, c='blue', label='1 array, 1 time')
+        #plt.scatter(x8, 10*inputs['stage2']+10*y8, s=10, c='red', zorder=1, label='2 arrays/times')
+        #plt.scatter(x9, 10*inputs['stage2']+10*y9, s=10, c='green', zorder=1, label='3 arrays/times')
+
+        xx = np.array(x7.tolist()+x8.tolist()+x9.tolist())
+        yy = 10*np.array(y7.tolist()+y8.tolist()+y9.tolist())
+        rr = pareto( xx,yy )
+        print(rr)
+        ii=subsample_to_n_points(list(zip(xx[rr==1],yy[rr==1])),inputs['number_proposals'])
+        #plt.scatter( xx[rr==1],10*inputs['stage2']+yy[rr==1], s=40, c='lightgray', zorder=0, label='%i selected'%5)
+        plt.scatter( xx[rr==1][ii],10*inputs['stage2']+yy[rr==1][ii], s=80, c='gray', zorder=0)
+
+        plt.locator_params(axis='x', integer=True, tight=True)
+        plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
+        plt.ylabel('Average Time to First Detection [years]', fontsize=14)
+
+        plt.savefig('%s/multi_stage_optimization_summary.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
+        plt.close()
+
+
+
 
         candidates = np.where(x3==np.max(x3))[0]
         stage1_best = np.random.choice(candidates[np.where(y3[candidates]==np.min(y3[candidates]))[0]])
@@ -828,7 +1020,6 @@ if __name__ == "__main__":
 
         plt.savefig('%s/arrays_stage1.png'%inputs['directory_plots'],format='png',bbox_inches='tight')
         plt.close()
-
 
         candidates = np.where(x6==np.max(x6))[0]
         stage2_best = np.random.choice(candidates[np.where(y6[candidates]==np.min(y6[candidates]))[0]])
