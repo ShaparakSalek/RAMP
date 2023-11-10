@@ -29,3 +29,4 @@ sources:
 stage1: 4
 stage2: 9
 threshold_nrms: 50
+number_proposals: 3
