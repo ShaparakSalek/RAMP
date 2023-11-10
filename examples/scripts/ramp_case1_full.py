@@ -764,6 +764,7 @@ if __name__ == "__main__":
         plans = plans1+plans2+plans3
         for i in ii:
             plans_selected['stage1'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            plans_selected['stage1'][-1]['plan_number'] = int(i)
             for deployment in plans[np.where(rr==1)[0][i]][0]:
                 arrays_selected += [ deployment[0] ]
 
@@ -774,6 +775,7 @@ if __name__ == "__main__":
         plans = plans4+plans5+plans6
         for i in ii:
             plans_selected['stage2'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            plans_selected['stage2'][-1]['plan_number'] = int(i)
             plans_selected['stage2'][-1]['time_to_detection'] += 10.0*inputs['stage1']
             for i in range(len(plans_selected['stage2'][-1]['deployments'])):
                 plans_selected['stage2'][-1]['deployments'][i]['time'] += 10.0*inputs['stage1']
@@ -787,6 +789,7 @@ if __name__ == "__main__":
         plans = plans7+plans8+plans9
         for i in ii:
             plans_selected['stage3'] += [convertPlan_tuple2dict(plans[np.where(rr==1)[0][i]])]
+            plans_selected['stage3'][-1]['plan_number'] = int(i)
             plans_selected['stage3'][-1]['time_to_detection'] += 10.0*inputs['stage2']
             for i in range(len(plans_selected['stage3'][-1]['deployments'])):
                 plans_selected['stage3'][-1]['deployments'][i]['time'] += 10.0*inputs['stage2']
