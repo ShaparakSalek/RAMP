@@ -23,6 +23,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 import argparse
 import numpy as np
+from scipy import interpolate
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities.data_readers.read_input_from_files import read_yaml_parameters,read_sens_from_segy
 from utilities.write_output_to_files import convert_matrix_to_segy,write_optimal_design_to_yaml
@@ -44,6 +45,26 @@ def create_cmap():
     colors = ['white', 'red']
     cmap = LinearSegmentedColormap.from_list('my_cmap', colors, N=64)
     return cmap
+
+def calculate_slopes(x, y):
+    """
+    Calculate the slopes at each point of the given x array.
+    
+    Parameters:
+    x (array-like): The array representing the x-axis values.
+    y (array-like): The array representing the y-axis values corresponding to x.
+    
+    Returns:
+    numpy.ndarray: An array of slopes at each point of x.
+    """
+    slopes = np.zeros_like(x)
+    slopes[0] = (y[1] - y[0]) / (x[1] - x[0])  # forward difference for the first point
+    slopes[-1] = (y[-1] - y[-2]) / (x[-1] - x[-2])  # backward difference for the last point
+    slopes[1:-1] = (y[2:] - y[:-2]) / (x[2:] - x[:-2])  # central difference for the rest
+    
+    return slopes
+
+
 
 class MonitoringDesignSensitivity2D:
     '''
@@ -71,10 +92,10 @@ class MonitoringDesignSensitivity2D:
         self.t1 = parameters['t1']
         years0 = parameters['years']
         self.senMax = parameters['senMax']
-        self.thresholds = parameters['thresholds']
+        self.thresholds = parameters['contour_values']
         self.opt_src_sep = parameters['ks']
         self.opt_rec_sep = parameters['kr']
-        self.sen_nor=parameters['sen_nor']
+        self.sen_nor=parameters['sen_norm']
         self.wavefield = parameters['wavefield']
         self.vpvs = parameters['vpvs']
         self.units= parameters['units']
@@ -485,20 +506,22 @@ class MonitoringDesignSensitivity2D:
         #print(th)
         design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
         return design
+    
 
-    def plot_sens_to_percent(self):
+
+    def get_sens_dtc_curve(self):
         '''
-        function to plot sensitivity vs data to collect percentage
+        function to get sensitivity vs data to collect percentage
         '''
-        if self.dtc_flag==0:
-            return
-        sens_dtc_dir = self.outpre + '/sens_dtc/'
-        if not os.path.exists(sens_dtc_dir):
-            os.makedirs(sens_dtc_dir)
-        
-        plt.figure(figsize=(20,15))
+        sen_all_years=[]
+        area_all_years=[]
+        area_th_all_years=[]
+        slopes_all_years=[]
         for yr in self.timestamps[:]:
-            plt.subplot(2,3,self.timestamps.index(yr)+1)
+            sen_all_comp=[]
+            area_all_comp=[]
+            area_th_all_comp=[]
+            slopes_all_comp=[]
             for wf in self.wavefield:
                 for ps in self.vpvs:
                     if self.segy_read==1:
@@ -512,24 +535,79 @@ class MonitoringDesignSensitivity2D:
                         design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
                         arae_all.append(area)
                         sen_all.append(sen_sel)
+                    arae_all=np.array(arae_all)
+                    sen_all=np.array(sen_all)
+                    # calculate the area when sen_all reach 90% of its max use interpolation
+                    sen_max=np.max(sen_all)
+                    self.sen_t_th=0.9
+                    sen_th=sen_max*self.sen_t_th
+                    # interpolation
+                    area_90=np.interp(sen_th,sen_all,arae_all)
+
+                    slopes = calculate_slopes(arae_all, sen_all)
+                    slopes=np.nan_to_num(slopes)
+                    f = interpolate.interp1d(slopes,arae_all, assume_sorted = False)
+                    self.slope_th=10
+                    area_at_slope_th=f(self.slope_th)
+                    sen_at_slope_th=np.interp(area_at_slope_th,arae_all,sen_all)
+                    slopes_all_comp.append([area_at_slope_th,sen_at_slope_th])
+                    area_th_all_comp.append([area_90,sen_th])
+                    area_all_comp.append(arae_all)
+                    sen_all_comp.append(sen_all)
+            sen_all_years.append(sen_all_comp)
+            area_all_years.append(area_all_comp)
+            area_th_all_years.append(area_th_all_comp)
+            slopes_all_years.append(slopes_all_comp)
+
+            self.sen_all_years=sen_all_years
+            self.area_all_years=area_all_years
+            self.area_th_all_years=area_th_all_years
+            self.slopes_all_years=slopes_all_years
+
+
+    def plot_sens_to_percent(self):
+        '''
+        function to plot sensitivity vs data to collect percentage
+        '''
+        # if self.dtc_flag==0:
+        #     return
+        sens_dtc_dir = self.outpre + '/sens_dtc/'
+        if not os.path.exists(sens_dtc_dir):
+            os.makedirs(sens_dtc_dir)
+        
+        plt.figure(figsize=(20,15))
+        for i,yr in enumerate(self.timestamps[:]):
+            plt.subplot(2,3,self.timestamps.index(yr)+1)
+            j=0
+            for wf in self.wavefield:
+                for ps in self.vpvs:
+                    
                     if self.sen_nor==1:
-                        plt.plot(arae_all,np.array(sen_all)/1250,'o-',label=wf+'_'+ps)                        
+                        plt.plot(self.area_all_years[i][j],self.sen_all_years[i][j]/1250,'-',label=wf+'_'+ps) 
+                        #plt.plot(self.slopes_all_years[i][j][0],self.slopes_all_years[i][j][1]/1250,'kp',ms=10)     
+                        #plt.plot(self.area_th_all_years[i][j][0],self.area_th_all_years[i][j][1]/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')                    
                     else:
-                        plt.plot(arae_all,sen_all,'o-',label=wf+'_'+ps)
+                        plt.plot(self.area_all_years[i][j],self.sen_all_years[i][j],'-',label=wf+'_'+ps)
+                        #plt.plot(self.slopes_all_years[i][j][0],self.slopes_all_years[i][j][1],'kp',ms=10)  
+                        #plt.plot(self.area_th_all_years[i][j][0],self.area_th_all_years[i][j][1]/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')  
+                    j+=1
+            x,y=np.array(self.area_th_all_years[i]).T
             plt.xlabel('data to collect (%)')
             if self.sen_nor==1:
+                plt.plot(x,y/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')
                 plt.ylim(0,1)
-                plt.ylabel('Normalized Total Sensitivity ')
+                plt.ylabel('Normalized Sensitivity Strength')
             else:
-                plt.ylabel('Total Sensitivity ')
+                plt.plot(x,y,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')
+                plt.ylabel('Sensitivity Strength')
             year=int(yr)-78
             plt.title('t1+{} yr'.format(year))
             plt.legend()
         # change default font size
         plt.rcParams.update({'font.size': 20})
-        
+        plt.tight_layout()
         plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
-        print('Done')
+        #print('Done')
 
     def plot_and_find_opt_arrays(self):
         # plot sensitivity images per component
@@ -626,7 +704,7 @@ if __name__ == "__main__":
     seis.plot_and_find_opt_arrays()
     
     seis.plot_and_find_opt_arrays_from_dtc()
-    
+    seis.get_sens_dtc_curve()
     seis.plot_sens_to_percent()
 
 
