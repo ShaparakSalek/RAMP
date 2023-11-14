@@ -33,7 +33,7 @@ output:
   # User defined data to collect percentage
   target_dtc: 5
  #  User defined threshold of the total sensitivity threshold
-  sens_threshold: 0.9
+  sens_threshold: 0.5
   
 input:
   # Directory path for data
@@ -46,10 +46,6 @@ sensitivities:
   sen_norm: 1
   # List of years for monitoring
   years: [80, 85, 90, 95, 100, 125]
-  # Maximum sensitivity values
-  senMax: [1e7, 1e7, 1e7, 1e9]
-  # contour values for sensitivity
-  contour_values: [0.2, 0.6]
   # downsample factor for sources
   ks: 4
   # downsample factor for receivers

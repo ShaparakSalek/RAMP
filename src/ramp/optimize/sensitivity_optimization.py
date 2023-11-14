@@ -91,8 +91,6 @@ class MonitoringDesignSensitivity2D:
         self.dsrc = parameters['ds']
         self.t1 = parameters['t1']
         years0 = parameters['years']
-        self.senMax = parameters['senMax']
-        self.thresholds = parameters['contour_values']
         self.opt_src_sep = parameters['ks']
         self.opt_rec_sep = parameters['kr']
         self.sen_nor=parameters['sen_norm']
@@ -267,7 +265,7 @@ class MonitoringDesignSensitivity2D:
             plt.close()
 
 
-    def plot_sensitivity_image(self, sens, outdir, yr, wf, vpvs, area):
+    def plot_sensitivity_image(self, sens, outdir, yr, wf, vpvs, ths):
         ''' Create a sensitivity image with x=receivers, y=sources
         per senstivity component and per time step (years)
 
@@ -308,22 +306,25 @@ class MonitoringDesignSensitivity2D:
         relative_right_position = 0.86  # 95% from the right edge
         relative_bottom_position = 0.05  # 5% from the bottom edge
         ax.text(relative_left_position, relative_bottom_position, yrs, transform=ax.transAxes, color='k', fontsize=24)
-        ax.text(0.6, relative_top_position+0.2, '%data to collect', transform=ax.transAxes, color='k')
-        ax.text(relative_right_position, relative_top_position+0.1, f'{area[0]:.1f}%', transform=ax.transAxes, color='brown')
-        ax.text(relative_right_position, relative_top_position, f'{area[1]:.1f}%', transform=ax.transAxes, color='m')
+        #ax.text(0.6, relative_top_position+0.2, str(self.sen_t_th)+' of total sens', transform=ax.transAxes, color='m')
+        # ax.text(relative_right_position, relative_top_position+0.1, f'{area[0]:.1f}%', transform=ax.transAxes, color='brown')
+        # ax.text(relative_right_position, relative_top_position, f'{area[1]:.1f}%', transform=ax.transAxes, color='m')
 
         ax.set_ylim(ax.get_ylim()[::-1])
         x = np.linspace(0, (self.nrec-1)*self.drec, self.nrec)
         y = np.linspace(0, (self.nsrc-1)*self.dsrc, self.nsrc)
         X, Y = np.meshgrid(x, y)
         if self.sen_nor==1:
-            CS = plt.contour(X,Y,sens,self.thresholds,vmin=0.0,vmax=1.0,linestyles='solid',
-                        linewidths=[0.5, 1.5], colors=['brown', 'm'])
+            CS = plt.contour(X,Y,sens,[ths],vmin=0.0,vmax=1.0,linestyles='solid',
+                        linewidths=[ 1.5], colors=['m'])
+            #CS = plt.contour(X,Y,sens,[ths)
         else:
-            CS = plt.contour(X,Y,sens,np.array(self.thresholds)*np.max(sens),vmin=0.0,vmax=np.max(sens),linestyles='solid',
-                        linewidths=[0.5, 1.5], colors=['brown', 'm'])
+            CS = plt.contour(X,Y,sens,np.array(ths)*np.max(sens),vmin=0.0,vmax=np.max(sens),linestyles='solid',
+                        linewidths=[ 1.5], colors=[ 'm'])
         ax.set_xlabel('Receiver Location (m)')
         ax.set_ylabel('Source Locations (m)')
+        CS.collections[0].set_label(str(self.sen_t_th)+' of total sens boundary')
+        plt.legend(loc='upper right')
         ax.grid(color='k', lw=0.3, alpha=0.2)
         fig.colorbar(img, label='Scaled Sensitivity ' + clabel, orientation='horizontal',
                      fraction=0.05, shrink=0.5, pad=0.125, aspect=30)
@@ -569,6 +570,10 @@ class MonitoringDesignSensitivity2D:
     
     def save_design_from_sen_th(self):
         optimal_dir = self.outpre + '/optimal_design_from_'+str(self.sen_t_th)+'_of_total_sens/'
+        out_dir = self.outpre + '/sensitivity_images/'
+        if not os.path.exists(out_dir):
+            os.makedirs(self.out_dir)
+
         j=0
         if not os.path.exists(optimal_dir):
             os.makedirs(optimal_dir)
@@ -591,6 +596,7 @@ class MonitoringDesignSensitivity2D:
                     design1, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,self.area_th_all_years[k][j][2])
                     #seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
                     design2 = self.plot_optimal_design(design1,self.modeldir,optimal_dir,wf,ps,yr,ns_max)
+                    self.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, self.area_th_all_years[k][j][2])
                     if self.output_yaml==1:
                         fname = optimal_dir + wf + '_' + ps + '_' + yr + '.yaml'
                         write_optimal_design_to_yaml(design2,fname)
@@ -721,7 +727,7 @@ if __name__ == "__main__":
 
     seis.plot_model_image()
 
-    seis.plot_sens_image()
+    #seis.plot_sens_image()
     
     seis.plot_and_find_opt_arrays_from_dtc()
     seis.get_sens_dtc_curve()
