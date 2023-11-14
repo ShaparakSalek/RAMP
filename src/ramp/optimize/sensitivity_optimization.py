@@ -105,6 +105,7 @@ class MonitoringDesignSensitivity2D:
         self.dtc_flag=parameters['dtc_flag']
         self.output_yaml=parameters['output_yaml']
         self.target_dtc=parameters['target_dtc']
+        self.sen_t_th=parameters['sens_threshold']
         self.segy_read=parameters['segy_read']
         # create a sensitivity object
 
@@ -112,7 +113,8 @@ class MonitoringDesignSensitivity2D:
         self.modeldir = self.datadir + 'models_plume_mask/'
     
         self.plume_images_dir = self.outpre + 'model_plume_images/'
-
+        ##
+        self.th_all=np.exp(-0.1*np.arange(200))
         # plot sensitivity images per component
         self.sensitivity_images_out_dir = self.outpre + '/sensitivity_images/'
         if not os.path.exists(self.sensitivity_images_out_dir):
@@ -492,17 +494,15 @@ class MonitoringDesignSensitivity2D:
         '''
         arae_all=[]
         sen_all=[]
-        th_all=np.exp(-0.1*np.arange(200))
-        for th in th_all:
+        #th_all=np.exp(-0.1*np.arange(200))
+        for th in self.th_all:
             design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
             arae_all.append(area)
             sen_all.append(sen_sel)
         arae_all=np.array(arae_all)
         sen_all=np.array(sen_all)
         # given one dtc, find the design and th
-        #print(sen_all)
-        design_idx = np.argmin(np.abs(arae_all-self.target_dtc))
-        th=th_all[design_idx]
+        th=np.interp(self.target_dtc,arae_all,self.th_all)
         #print(th)
         design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
         return design
@@ -517,13 +517,14 @@ class MonitoringDesignSensitivity2D:
         area_all_years=[]
         area_th_all_years=[]
         slopes_all_years=[]
-        for yr in self.timestamps[:]:
+
+        for k,yr in enumerate(self.timestamps[:]):
             sen_all_comp=[]
             area_all_comp=[]
             area_th_all_comp=[]
             slopes_all_comp=[]
             for wf in self.wavefield:
-                for ps in self.vpvs:
+                for ps in self.vpvs:               
                     if self.segy_read==1:
                         segy_path=self.datadir+wf + '_' + ps + '_' + yr + '.sgy'
                         sens2d = read_sens_from_segy(segy_path,self.sen_nor)
@@ -531,7 +532,8 @@ class MonitoringDesignSensitivity2D:
                         sens2d = self.load_sensitivity_data(self.datadir, yr, wf, ps)
                     arae_all=[]
                     sen_all=[]
-                    for th in np.exp(-0.1*np.arange(200)):
+                    
+                    for th in self.th_all:
                         design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
                         arae_all.append(area)
                         sen_all.append(sen_sel)
@@ -539,19 +541,20 @@ class MonitoringDesignSensitivity2D:
                     sen_all=np.array(sen_all)
                     # calculate the area when sen_all reach 90% of its max use interpolation
                     sen_max=np.max(sen_all)
-                    self.sen_t_th=0.9
+                    #self.sen_t_th=0.9
                     sen_th=sen_max*self.sen_t_th
                     # interpolation
                     area_90=np.interp(sen_th,sen_all,arae_all)
-
-                    slopes = calculate_slopes(arae_all, sen_all)
-                    slopes=np.nan_to_num(slopes)
-                    f = interpolate.interp1d(slopes,arae_all, assume_sorted = False)
-                    self.slope_th=10
-                    area_at_slope_th=f(self.slope_th)
-                    sen_at_slope_th=np.interp(area_at_slope_th,arae_all,sen_all)
-                    slopes_all_comp.append([area_at_slope_th,sen_at_slope_th])
-                    area_th_all_comp.append([area_90,sen_th])
+                    th_sens=np.interp(sen_th,sen_all,self.th_all)
+                    self.slope_th=0
+                    if self.slope_th:
+                        slopes = calculate_slopes(arae_all, sen_all)
+                        slopes=np.nan_to_num(slopes)
+                        f = interpolate.interp1d(slopes,arae_all, assume_sorted = False)
+                        area_at_slope_th=f(self.slope_th)
+                        sen_at_slope_th=np.interp(area_at_slope_th,arae_all,sen_all)
+                        slopes_all_comp.append([area_at_slope_th,sen_at_slope_th])
+                    area_th_all_comp.append([area_90,sen_th,th_sens])
                     area_all_comp.append(arae_all)
                     sen_all_comp.append(sen_all)
             sen_all_years.append(sen_all_comp)
@@ -563,7 +566,40 @@ class MonitoringDesignSensitivity2D:
             self.area_all_years=area_all_years
             self.area_th_all_years=area_th_all_years
             self.slopes_all_years=slopes_all_years
-
+    
+    def save_design_from_sen_th(self):
+        optimal_dir = self.outpre + '/optimal_design_from_'+str(self.sen_t_th)+'_of_total_sens/'
+        j=0
+        if not os.path.exists(optimal_dir):
+            os.makedirs(optimal_dir)
+        for wf in self.wavefield:
+            for ps in self.vpvs:
+                if self.segy_read==1:
+                    segy_path=self.datadir+wf + '_' + ps + '_' + self.timestamps[-1] + '.sgy'
+                    sens2d = read_sens_from_segy(segy_path,self.sen_nor)
+                else:
+                    sens2d = self.load_sensitivity_data(self.datadir, self.timestamps[-1], wf, ps)
+                design1=self.find_design_from_dtc(sens2d)
+                ns_max = self.find_max_num_sources(design1)
+                for k,yr in enumerate(self.timestamps):
+                    print('Optimal design from ' +str(self.sen_t_th)+'_of_total_sens', yr+'y', wf, ps)
+                    if self.segy_read==1:
+                        segy_path=self.datadir+wf + '_' + ps + '_' + yr + '.sgy'
+                        sens2d = read_sens_from_segy(segy_path,self.sen_nor)
+                    else:
+                        sens2d = self.load_sensitivity_data(self.datadir, yr, wf, ps)
+                    design1, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,self.area_th_all_years[k][j][2])
+                    #seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
+                    design2 = self.plot_optimal_design(design1,self.modeldir,optimal_dir,wf,ps,yr,ns_max)
+                    if self.output_yaml==1:
+                        fname = optimal_dir + wf + '_' + ps + '_' + yr + '.yaml'
+                        write_optimal_design_to_yaml(design2,fname)
+                    else:
+                        fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
+                        with open(fname, 'w') as fout:
+                            for line in design2:
+                                fout.write(str(line) + '\n')
+                j=j+1
 
     def plot_sens_to_percent(self):
         '''
@@ -585,13 +621,11 @@ class MonitoringDesignSensitivity2D:
                     if self.sen_nor==1:
                         plt.plot(self.area_all_years[i][j],self.sen_all_years[i][j]/1250,'-',label=wf+'_'+ps) 
                         #plt.plot(self.slopes_all_years[i][j][0],self.slopes_all_years[i][j][1]/1250,'kp',ms=10)     
-                        #plt.plot(self.area_th_all_years[i][j][0],self.area_th_all_years[i][j][1]/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')                    
                     else:
                         plt.plot(self.area_all_years[i][j],self.sen_all_years[i][j],'-',label=wf+'_'+ps)
                         #plt.plot(self.slopes_all_years[i][j][0],self.slopes_all_years[i][j][1],'kp',ms=10)  
-                        #plt.plot(self.area_th_all_years[i][j][0],self.area_th_all_years[i][j][1]/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')  
                     j+=1
-            x,y=np.array(self.area_th_all_years[i]).T
+            x,y,z=np.array(self.area_th_all_years[i]).T
             plt.xlabel('data to collect (%)')
             if self.sen_nor==1:
                 plt.plot(x,y/1250,'k*',ms=12,label=str(self.sen_t_th)+' of total sens point')
@@ -609,15 +643,11 @@ class MonitoringDesignSensitivity2D:
         plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
         #print('Done')
 
-    def plot_and_find_opt_arrays(self):
+    def plot_sens_image(self):
         # plot sensitivity images per component
         out_dir = self.outpre + '/sensitivity_images/'
         if not os.path.exists(out_dir):
             os.makedirs(self.out_dir)
-
-        optimal_dir = self.outpre + '/optimal_design/'
-        if not os.path.exists(optimal_dir):
-            os.makedirs(optimal_dir)
 
         area = [0.0, 0.0]
         for wf in self.wavefield:
@@ -640,16 +670,7 @@ class MonitoringDesignSensitivity2D:
                     _, area[0],sen_sel = self.find_optimal_seismic_arrays(sens2d,self.thresholds[0])
                     design1, area[1],sen_sel = self.find_optimal_seismic_arrays(sens2d,self.thresholds[1])
                     self.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
-                    design2 = self.plot_optimal_design(design1,self.modeldir,optimal_dir,wf,ps,yr,ns_max)
-                    if self.output_yaml==1:
-                        fname = optimal_dir + wf + '_' + ps + '_' + yr + '.yaml'
-                        write_optimal_design_to_yaml(design2,fname)
-                    else:
-                        fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
-                        with open(fname, 'w') as fout:
-                            for line in design2:
-                                fout.write(str(line) + '\n')
-
+                    
     def plot_and_find_opt_arrays_from_dtc(self):
         '''
         given a value of data to collect, find and plot the optimal seismic design
@@ -675,7 +696,6 @@ class MonitoringDesignSensitivity2D:
                     else:
                         sens2d = self.load_sensitivity_data(self.datadir, yr, wf, ps)
                     design1=self.find_design_from_dtc(sens2d)
-                    #seis.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, area)
                     design2 = self.plot_optimal_design(design1,self.modeldir,optimal_dir,wf,ps,yr,ns_max)
                     if self.output_yaml==1:
                         fname = optimal_dir + wf + '_' + ps + '_' + yr + '.yaml'
@@ -701,10 +721,11 @@ if __name__ == "__main__":
 
     seis.plot_model_image()
 
-    seis.plot_and_find_opt_arrays()
+    seis.plot_sens_image()
     
     seis.plot_and_find_opt_arrays_from_dtc()
     seis.get_sens_dtc_curve()
+    seis.save_design_from_sen_th()
     seis.plot_sens_to_percent()
 
 

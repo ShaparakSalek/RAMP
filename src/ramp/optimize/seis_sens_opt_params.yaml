@@ -32,6 +32,8 @@ output:
   outpre: ./output/
   # User defined data to collect percentage
   target_dtc: 5
+ #  User defined threshold of the total sensitivity threshold
+  sens_threshold: 0.9
   
 input:
   # Directory path for data
