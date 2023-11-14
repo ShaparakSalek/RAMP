@@ -76,16 +76,34 @@ plan by determining ideal locations and timings for seismic surveys.
 
 4. Navigate to the working directory in RAMP/examples/scripts
 
-5. Edit the inputs.json file changing the EDX key to yours. Take care
-   to remove the EDX key later if sharing the inputs.json file broadly.
-   Also edit variables like the number of simulations to download, how long
-   each stage of the multi-stage optimization should be, where to store inputs
-   and outputs, etc.
+5. 5.	Edit the inputs.json file or inputs.yaml file in order to edit the various variables controlling the way the optimization script runs
+a.	Change the “edx_api_key” variable to your EDX key. Take care to remove the EDX key later if sharing the inputs.json file broadly.
+b.	Edit the next three true/false variables, labelled “download_data”, “run_optimization” and “plot_results”, to specify whether you want all three of those steps run. For example, once you’ve downloaded the data once, you can probably set “download_data” to false on subsequent runs. Once you’ve run the optimization successfully and are happy with the results but want to edit the plotting codes, you can probably set “run_optimization” to false on subsequent runs.
+c.	Leave “data_case” equal to 1, in later versions there may be other data cases available to work with.
+d.	Define the number or list of leakage scenarios to include in the optimization. Currently you can simply specify a single number X and the script will use all leakage scenarios 1 through X. You can also use a dash to specify a range, X-Y will use all leakage scenarios from X to Y. You can also use commas to specify an irregular list of leakage scenarios, eg  “1,5,9,23,24,25”
+e.	Define the directories where you’d like the various leakage scenarios, intermediate NRMS files and output files stored using the parameters “directory_seismic_data”, “directory_velocity_data”, “directory_nrms_data” and “directory_plots”
+f.	Define the list of potential source locations you’d like to consider in the optimization. You can specify an irregular list of values using the “sources” parameter, or you can design a set of evenly spaced potential sources using the “sourceNum”, “sourceMin” and “sourceMax” variables. If the “sources” variable is defined, it overrides the “sourceNum”, “sourceMin” and “sourceMax” variables.
+g.	Define the list of potential receiver locations using the same approach.
+h.	Define the seismic total duration using the “seismic_total_duration” variable.
+i.	Define the seismic sampling interval using the “seismic_sampling_interval” variable.
+j.	Define the NRMS threshold using the “threshold_nrms” variable.
+k.	Define how many time-steps you would like to include in each stage of the 3-stage optimization process using the “stage1” and “stage2” variables.
+l.	Define the number of monitoring plans you’d like to choose from using the “number_proposals” variable. While the optimization generates many thousands of potential monitoring plans, this limits the volume of information thrown at the user by narrowing it down to a set number of proposed monitoring plans.
 
-6. Run the optimization using the following command::
+
+6. Run the optimization using the following command, depending on which input file you chose to edit. Depending on your python installation, you may need to use "python" instead of "python3" in this command.::
 
     python3 ramp_case1_full.py inputs.json
 
+    or
+
+    python3 ramp_case1_full.py inputs.yaml
+
+   If you are using a visual IDE to run python, there may be a more complex and environment-specific way of running a python script with argument variables. A few examples are provided at these links.
+
+   https://qbi-software.github.io/Python-tutorial/lessons/1-scripting.html
+   https://www.jetbrains.com/help/pycharm/run-debug-configuration-python.html
+   
    If you get the following error, it likely means that something is wrong with your EDX key::
 
        Traceback (most recent call last):
