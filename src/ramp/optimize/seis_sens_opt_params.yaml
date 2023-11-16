@@ -40,7 +40,14 @@ input:
   datadir: ./example_data/
   # flag to use "segy" format, 0 to read data from bin files directly
   segy_read: 1
-
+  # EDX workspace id
+  workspace_id: 'nrap-task-4-monitoring'
+  # EDX data folder id
+  data_folder_id: 'c17b770f-4034-4798-a0e7-95e19a434d77'
+  # EDX model folder id
+  model_folder_id: '0762246f-c483-4051-b53a-e1e5645ffb9d'
+  # api key, you can get this by hovering your mouse at EDX profile page 'EDX-API-KEY'
+  api_key: ' '
 sensitivities:
   # flag to control the normalization of the sensivity
   sen_norm: 1

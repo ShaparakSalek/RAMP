@@ -25,7 +25,7 @@ import argparse
 import numpy as np
 from scipy import interpolate
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utilities.data_readers.read_input_from_files import read_yaml_parameters,read_sens_from_segy
+from utilities.data_readers.read_input_from_files import read_yaml_parameters,read_sens_from_segy,download_data_from_edx
 from utilities.write_output_to_files import convert_matrix_to_segy,write_optimal_design_to_yaml
 mpl.rcParams.update({'font.size': 20})
 DEBUG = False
@@ -97,7 +97,15 @@ class MonitoringDesignSensitivity2D:
         self.wavefield = parameters['wavefield']
         self.vpvs = parameters['vpvs']
         self.units= parameters['units']
-        self.datadir = parameters['datadir']
+        self.datadir = parameters['datadir']        
+        self.workspace_id=parameters['workspace_id']
+        self.data_folder_id=parameters['data_folder_id']
+        self.model_folder_id=parameters['model_folder_id']
+        self.api_key=parameters['api_key']
+        if not os.path.exists(self.datadir):
+            os.makedirs(self.datadir)
+        if not glob.glob(self.datadir + '*.sgy'):
+                download_data_from_edx(self.workspace_id,self.data_folder_id,self.api_key,self.datadir)    
         self.outpre = parameters['outpre']
         self.timestamps = [str(y) for y in years0]
         self.dtc_flag=parameters['dtc_flag']
@@ -108,8 +116,9 @@ class MonitoringDesignSensitivity2D:
         # create a sensitivity object
 
         # plot velocity, density and plume models (images)
-        self.modeldir = self.datadir + 'models_plume_mask/'
-    
+        self.modeldir = './models_plume_mask/'
+        if not os.path.exists(self.modeldir):
+            os.makedirs(self.modeldir)
         self.plume_images_dir = self.outpre + 'model_plume_images/'
         ##
         self.th_all=np.exp(-0.1*np.arange(200))
@@ -219,6 +228,9 @@ class MonitoringDesignSensitivity2D:
         if not os.path.exists(self.plume_images_dir):
             os.makedirs(self.plume_images_dir)
         fnames = glob.glob(self.modeldir + '*.bin')
+        if not glob.glob(self.modeldir + '*.bin'):
+            download_data_from_edx(self.workspace_id,self.model_folder_id,self.api_key,self.modeldir)
+            fnames = glob.glob(self.modeldir + '*.bin')
         for fname in fnames:
             #seis.plot_model_image(fname, out_dir)
             model = self.read_seismic_model(fname)

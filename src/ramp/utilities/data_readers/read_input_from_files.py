@@ -8,6 +8,7 @@
 import yaml
 from obspy.io.segy.core import _read_segy
 import numpy as np
+import requests
 
 def read_yaml_parameters(file_path):
     """
@@ -54,3 +55,42 @@ def read_sens_from_segy(filename,sen_nor):
         dsens = maxSens - minSens
         sens = (sens - minSens) / dsens
     return sens
+
+def download_data_from_edx(workspace_id,folder_id,api_key,outdir):
+    headers = {"EDX-API-Key": api_key}
+
+    data = {
+        "workspace_id": workspace_id,
+        "folder_id": folder_id,
+    }
+
+    #outdir ='./'
+
+    # The following link stays the same even for different workspaces
+    # This is a URL to API endpoint
+    url = 'https://edx.netl.doe.gov/api/3/action/folder_resources'
+
+    # Get data associated with folder
+    r = requests.post(
+        url,  # URL to API endpoint
+        headers=headers,  # Headers dictionary
+        data=data,  # Dictionary of data params
+    )
+
+    # Convert data into dictionary format
+    json_data = r.json()
+    print(json_data.keys())
+
+    # Get files names, their urls in the folder resources
+    resources = json_data['result']['resources']
+    print('Total number of files', len(resources), '\n')
+
+    # download all files in the folder
+    for res in resources:
+        file_name = res['name']
+        print(file_name)
+        file_url = res['url']
+        print(file_url)
+        r = requests.get(file_url, headers=headers)
+        with open(outdir + file_name, 'wb') as file:
+            file.write(r.content)
