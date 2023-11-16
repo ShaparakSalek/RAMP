@@ -37,7 +37,7 @@ output:
   
 input:
   # Directory path for data
-  datadir: ./example_data/
+  datadir: ./sensitivity_data/
   # flag to use "segy" format, 0 to read data from bin files directly
   segy_read: 1
   # EDX workspace id

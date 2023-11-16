@@ -16,21 +16,15 @@ import os, sys, glob
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.ticker as mticker
+from matplotlib.lines import Line2D
 from matplotlib.colors import LinearSegmentedColormap
-# from ipywidgets import interact, IntSlider, HBox, IntText, BoundedIntText
-# import ipywidgets as widgets
-
 import argparse
-import numpy as np
-from scipy import interpolate
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities.data_readers.read_input_from_files import read_yaml_parameters,read_sens_from_segy,download_data_from_edx
 from utilities.write_output_to_files import convert_matrix_to_segy,write_optimal_design_to_yaml
 mpl.rcParams.update({'font.size': 20})
 DEBUG = False
-
-
 
 # -------------------------------
 
@@ -116,21 +110,16 @@ class MonitoringDesignSensitivity2D:
         # create a sensitivity object
 
         # plot velocity, density and plume models (images)
-        self.modeldir = './models_plume_mask/'
+        self.modeldir = './velocity_plume_mask/'
         if not os.path.exists(self.modeldir):
             os.makedirs(self.modeldir)
-        self.plume_images_dir = self.outpre + 'model_plume_images/'
+        self.plume_images_dir = self.outpre + 'velocity_plume_images/'
         ##
         self.th_all=np.exp(-0.1*np.arange(200))
         # plot sensitivity images per component
         self.sensitivity_images_out_dir = self.outpre + '/sensitivity_images/'
         if not os.path.exists(self.sensitivity_images_out_dir):
             os.makedirs(self.sensitivity_images_out_dir)
-
-        self.optimal_dir = self.outpre + '/optimal_design/'
-        if not os.path.exists(self.optimal_dir):
-            os.makedirs(self.optimal_dir)
-
 
 
     def read_sensitivity_file(self, path, fname):
@@ -338,10 +327,16 @@ class MonitoringDesignSensitivity2D:
             CS = plt.contour(X,Y,sens,ths*np.max(sens),vmin=0.0,vmax=np.max(sens),linestyles='solid',colors=contour_color_list[:len(ths)])
         ax.set_xlabel('Receiver Location (m)')
         ax.set_ylabel('Source Locations (m)')
+
+        lines = []
+        labels = []
         for i,th in enumerate(ths):
-            CS.collections[int(len(ths)-i-1)].set_label('{:1.2f} of total sens boundary'.format(sens_th[i]))
+            lines.append(Line2D([0],[0],color=contour_color_list[i], lw=2))
+            labels.append('{:.2f} *(sens strength)'.format(sens_th[i]))
+            # CS.collections[int(len(ths)-i-1)].set_label('{:.2f} *(sens strength)'.format(sens_th[i]))
         #plt.clabel([str(ths[0]),str(ths[1])])
-        plt.legend(loc='upper right')
+        # plt.legend(loc='upper right', fontsize=16)
+        ax.legend(lines, labels, loc='upper right', fontsize=16)
         ax.grid(color='k', lw=0.3, alpha=0.2)
         fig.colorbar(img, label='Scaled Sensitivity ' + clabel, orientation='horizontal',
                      fraction=0.05, shrink=0.5, pad=0.125, aspect=30)
@@ -591,7 +586,7 @@ class MonitoringDesignSensitivity2D:
     def save_design_from_sen_th(self):
         out_dir = self.outpre + '/sensitivity_images/'
         for kk in range(len(self.sen_t_th)):
-            optimal_dir = self.outpre + '/optimal_design_from_'+str(self.sen_t_th[kk])+'_of_total_sens/'
+            optimal_dir = self.outpre + '/optimal_design_'+str(self.sen_t_th[kk])+'_of_sens_strength/'
             if not os.path.exists(out_dir):
                 os.makedirs(self.out_dir)
 
@@ -656,17 +651,17 @@ class MonitoringDesignSensitivity2D:
             for k,sen_th in enumerate(self.sen_t_th):
                 y,x,z=self.area_th_all_years[i,:,k,:].T
                 if self.sen_nor==1:
-                    plt.plot(x,y/1250,'*',ms=12,label=str(self.sen_t_th[k])+' of total sens point')
+                    plt.plot(x,y/1250,'*',ms=12,label='Sens strength=' + str(self.sen_t_th[k]))
                     plt.ylim(0,1)
                     plt.ylabel('Normalized Sensitivity Strength')
                 else:
-                    plt.plot(x,y,'*',ms=12,label=str(self.sen_t_th[k])+' of total sens point')
+                    plt.plot(x,y,'*',ms=12,label='Sens strength=' + str(self.sen_t_th[k]))
                     plt.ylabel('Sensitivity Strength')
             plt.xlabel('Data to collect (%)')
             
             year=int(yr)-78
             plt.title('t1+{} yr'.format(year))
-            plt.legend(loc='upper right')
+            plt.legend(loc='upper left', ncols=2, fontsize=16)
         # change default font size
         plt.rcParams.update({'font.size': 20})
         plt.tight_layout()
@@ -679,7 +674,7 @@ class MonitoringDesignSensitivity2D:
         '''
         given a value of data to collect, find and plot the optimal seismic design
         '''
-        optimal_dir = self.outpre + '/optimal_design_from_'+str(self.target_dtc)+'%_of_data/'
+        optimal_dir = self.outpre + '/optimal_design_'+str(self.target_dtc)+'%_of_data/'
         
         if not os.path.exists(optimal_dir):
             os.makedirs(optimal_dir)
