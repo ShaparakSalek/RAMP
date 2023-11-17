@@ -4,8 +4,9 @@
 @author: Yuan Tian @ LLNL
 """
 
-import os, sys
-from obspy import  Trace, Stream, UTCDateTime
+import os
+import sys
+from obspy import Trace, Stream, UTCDateTime
 from obspy.core import AttribDict
 from obspy.io.segy.segy import SEGYTraceHeader, SEGYBinaryFileHeader
 import numpy as np
@@ -37,7 +38,7 @@ def convert_matrix_to_segy(sens2d,filename):
         trace.stats.delta = 0.01
         # SEGY does not support microsecond precision! Any microseconds will
         # be discarded.
-        trace.stats.starttime = UTCDateTime(2011,11,11,11,11,11)
+        trace.stats.starttime = UTCDateTime(2011, 11, 11, 11, 11, 11)
 
         # If you want to set some additional attributes in the trace header,
         # add one and only set the attributes you want to be set. Otherwise the
@@ -59,7 +60,7 @@ def convert_matrix_to_segy(sens2d,filename):
     stream.stats.binary_file_header = SEGYBinaryFileHeader()
     stream.stats.binary_file_header.trace_sorting_code = 5
     stream.write(filename, format="SEGY", data_encoding=1,
-                byteorder=sys.byteorder)
+                 byteorder=sys.byteorder)
 
 
 

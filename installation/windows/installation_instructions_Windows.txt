@@ -60,7 +60,7 @@ provided specifically to manage Anaconda distribution.
 
 4. Create an environment which would contain all the Python packages needed
 for proper work of RAMP.
- -- Navigate to the folder "installation/Windows" in the Anaconda prompt
+ -- In the Anaconda prompt navigate to the folder "installation/Windows" 
  -- Type or copy the following command in the prompt and press Enter
 
 	conda create --name RAMPEnv python=3.10.13 pip
@@ -77,7 +77,7 @@ by typing in the Anaconda prompt
 	conda activate RAMPEnv
 
 6. The next step is to install the rest of the needed packages. Once the environment
-is activated (there will be (RAMPEnv) at the beginning of the command line) type or copy  the following command
+is activated (there will be (RAMPEnv) at the beginning of the command line) type or copy the following command
 
 	python -m pip install scipy==1.11.3 numpy==1.26.1 pandas==2.1.1 matplotlib==3.8.0 PyYAML==6.0.1 jupyter==1.0.0 spyder==5.4.5 sphinx==7.2.6 six==1.16.0 obspy==1.4.0 requests==2.31.0 h5py==3.10.0 scikit-learn==1.3.2
 

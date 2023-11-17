@@ -8,6 +8,8 @@ RAMP Use Cases
 
 .. include:: use_case1.rst
 
+.. include:: use_case2.rst
+
 ##################
 Indices and tables
 ##################
