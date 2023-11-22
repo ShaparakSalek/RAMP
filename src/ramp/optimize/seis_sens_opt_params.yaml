@@ -57,10 +57,9 @@ sensitivities:
   ks: 4
   # downsample factor for receivers
   kr: 4
-  # wavefield of the seismic wave
-  wavefield: ['P', 'S']
-  # velocity type
-  vpvs: ['Vp', 'Vs']
+  # different components of seismic sensitivity energy
+  components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs'],['P+S','Vp'],['P+S','Vs'],['P+S','Vp+Vs'],['P','Vp+Vs']]
+  #components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs']]
   # units used for model plot
   units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}
   
