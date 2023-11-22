@@ -295,6 +295,8 @@ class MonitoringDesignSensitivity2D:
             ths=np.sort(ths)
             inds = ths.argsort()
             sens_th=np.array(self.sen_t_th)[inds]
+        else:
+            sens_th = np.array(self.sen_t_th)
 
         fig, ax = plt.subplots(figsize=(10, 8))
         contour_color_list=['m','brown','b','k','g']
@@ -444,17 +446,19 @@ class MonitoringDesignSensitivity2D:
 
         ns, nr = src_rec.shape
         design = []
-        fig, ax = plt.subplots(figsize=(12, 6))
-        xMin = 0; xMax = self.nx * self.dx
-        cmap = create_cmap()
-        ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap=cmap)
-        prefix = wf + '_' + ps + '_y' + yr
+        
+        # Create a figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8),sharex = True)
 
+        # Subplot 1: Source and Receivers
+        xMin = 0
+        xMax = self.nx * self.dx
         k = 0
+        kk=0
         for i in range(ns):
-            s = np.int32(src_rec[i,:])
+            s = np.int32(src_rec[i, :])
             if np.sum(s) <= 0: continue
-            y0 = -100 - k*200
+            y0 =k
             k += 1
             xs = i * self.dsrc * self.opt_src_sep
             xr = np.float32(np.nonzero(s)) * self.drec * self.opt_rec_sep
@@ -462,33 +466,52 @@ class MonitoringDesignSensitivity2D:
             design.append(xs)
             design.append(list(xr))
 
-            plt.plot([xMin, xMax], [y0, y0], 'k--', lw=0.3)
-            plt.plot([xs], [y0], 'r*', ms=8)
-            plt.plot(xr, [y0]*len(xr), 'bo', ms=3)
+            ax1.plot([xMin, xMax], [y0, y0], 'k--', lw=0.3)
+            if len(xr)>0 and kk==0:
+                ax1.plot([xs], [y0], 'r*', ms=8,label='sources')
+                ax1.plot(xr, [y0] * len(xr), 'bo', ms=3,label='receievrs')
+                kk=kk+1
+            else:
+                ax1.plot([xs], [y0], 'r*', ms=8)
+                ax1.plot(xr, [y0] * len(xr), 'bo', ms=3)
 
         for j in range(k, ns_max):
-            y0 = -100 - j*200
-            plt.plot([xMin, xMax], [y0, y0], 'k--', lw=0.3)
-
-        ax.set_yticks((0, 1000, 2000))
-        ax.set_xlabel('Horizontal Distance (m)')
-        ax.set_ylabel('Depth (m)', loc='bottom')
-        rel_pos1=0.01
-        rel_pos2=0.03
+            y0 = j
+            ax1.plot([xMin, xMax], [y0, y0], 'k--', lw=0.3)
+        ax1.set_ylabel('Source-receiver array')
+        #ax1.set_yticks(-100 - np.arange(k-1) * 200)
+        # Add vertical grid to the upper plot
+        ax1.xaxis.grid(True, linestyle='--', color='grey', alpha=0.8)
+        #ax1.tick_params( bottom=False) 
+        #ax1.set_xticks()
+        #ax1.legend(loc='upper right')
+        ax1.legend()
+        #ax2.grid(lw=0.5, alpha=0.8)
+        # Subplot 2: Model Image
+        cmap = create_cmap()
+        ax2.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap=cmap)
+        ax2.set_yticks((0, 1000, 2000))
+        rel_pos1 = 0.01
+        rel_pos2 = 0.03
         yrs = str(int(yr) - self.t1)
         annotate = 'CO$_2$ plume mask at t1+' + yrs + ' years'
-        ax.text(rel_pos1, rel_pos2, annotate, transform=ax.transAxes, color='black')
-        ax.grid(lw=0.2, alpha=0.5)
-        ax.set_aspect('auto')
-
-        plt.savefig(outdir2 + prefix + '.png', bbox_inches='tight')
+        ax2.text(rel_pos1, rel_pos2, annotate, transform=ax2.transAxes, color='black')
+        ax2.grid(lw=0.5, alpha=0.8)
+        ax2.set_aspect('auto')
+        ax2.set_ylabel('Depth (m)')
+        ax2.set_xlabel('Horizontal Distance (m)')
+        #ax1.set_xticklabels([])
+        # Adjusting layout and saving the figure
         plt.tight_layout()
+        plt.subplots_adjust( hspace=0.2)
+        prefix = wf + '_' + ps + '_y' + yr
+        plt.savefig(outdir2 + prefix + '.png', bbox_inches='tight')
 
         plt.cla()
         plt.clf()
         plt.close()
         return design
-    
+        
     
     def find_design_from_dtc(self,sens2d):
         '''
@@ -628,8 +651,6 @@ class MonitoringDesignSensitivity2D:
         '''
         function to plot sensitivity vs data to collect percentage
         '''
-        # if self.dtc_flag==0:
-        #     return
         sens_dtc_dir = self.outpre + '/sens_dtc/'
         if not os.path.exists(sens_dtc_dir):
             os.makedirs(sens_dtc_dir)
@@ -668,7 +689,19 @@ class MonitoringDesignSensitivity2D:
         plt.savefig(sens_dtc_dir + 'sens_dtc.png', bbox_inches='tight')
         #print('Done')
 
+    def plot_sens_to_percent_by_year(self):
+        '''
+        function to plot sensitivity vs data to collect percentage
+        '''
+        sens_dtc_dir = self.outpre + '/sens_dtc/'
+        if not os.path.exists(sens_dtc_dir):
+            os.makedirs(sens_dtc_dir)
+        plt.figure(figsize=(20,15))
 
+        plt.rcParams.update({'font.size': 20})
+        plt.tight_layout()
+        plt.savefig(sens_dtc_dir + 'sens_dtc_by_year.png', bbox_inches='tight')
+        
                     
     def plot_and_find_opt_arrays_from_dtc(self):
         '''
@@ -706,6 +739,13 @@ class MonitoringDesignSensitivity2D:
                                 fout.write(str(line) + '\n')
     
                          
+
+
+# class seismic_sensitivity_2d:
+#     '''
+#     sensitivity-based 2D seismic monitoring design
+#     '''
+#     def __init__(self,seis2d,wf,vpvs):
 
 
 # ----------------------------------------
