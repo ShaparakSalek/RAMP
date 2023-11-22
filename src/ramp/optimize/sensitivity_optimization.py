@@ -682,7 +682,7 @@ class MonitoringDesignSensitivity2D:
             
             year=int(yr)-78
             plt.title('t1+{} yr'.format(year))
-            plt.legend(loc='upper left', ncols=2, fontsize=16)
+            plt.legend(loc='upper left', ncol=2, fontsize=16)
         # change default font size
         plt.rcParams.update({'font.size': 20})
         plt.tight_layout()
