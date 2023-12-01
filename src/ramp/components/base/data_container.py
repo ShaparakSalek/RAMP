@@ -39,8 +39,8 @@ class DataContainer(ComponentModel):
             System model to which the data container belongs
         family : str
             Family of data containers to which this one belongs to.
-        obs_name : str
-            Name of observation with which the loaded data will be associated
+        obs_name : str or list of strings
+            Name(s) of observation with which the loaded data will be associated
         data_directory : str, optional
             Path to the folder containing data (and possibly setup and time points)
             files. The default is None.
@@ -91,16 +91,27 @@ class DataContainer(ComponentModel):
         super().__init__(name, parent, model=self.export,
                          model_kwargs=model_kwargs)
         self.family = family
-        self.grid_obs_keys = [obs_name]
 
+        # Setup baseline data related attributes
+        self.baseline_data = dict() # empty dictionary
         self.baseline_in = baseline
+
+        # Process obs_name argument
+        if isinstance(obs_name, str):
+            self.obs_names = [obs_name]
+        elif isinstance(obs_name, list):
+            self.obs_names = obs_name
+
+        # Setup gridded observations keys
+        self.grid_obs_keys = self.obs_names
+
+        # If we need to deal with baseline data, add delta-type of observation
         if self.baseline_in:
-            self.grid_obs_keys = self.grid_obs_keys +[
-                'delta_{}'.format(obs_name), 'baseline_{}'.format(obs_name)]
+            for nm in self.obs_names:
+                self.grid_obs_keys = self.grid_obs_keys +[
+                    'delta_{}'.format(nm), 'baseline_{}'.format(nm)]
 
-        self.baseline_data = None
-        self.obs_name = obs_name
-
+        # Process data files related attributes
         self.data_directory = data_directory
         self.reader = data_reader
         self.reader_kwargs = {}
@@ -130,10 +141,11 @@ class DataContainer(ComponentModel):
         # Check whether additional presetup is requested: in particular, one
         # related to the obs_to_be_linked
         if presetup:
-            self.add_obs_to_be_linked(obs_name, obs_type='grid')
-            if self.baseline_in:
-                for key in ['delta_', 'baseline_']:
-                    self.add_obs_to_be_linked(key+obs_name, obs_type='grid')
+            for nm in self.obs_names:
+                self.add_obs_to_be_linked(nm, obs_type='grid')
+                if self.baseline_in:
+                    for key in ['delta_', 'baseline_']:
+                        self.add_obs_to_be_linked(key+nm, obs_type='grid')
 
         # TODO System model does not yet know how to handle those
         if self._parent.time_array is not None:
@@ -367,7 +379,6 @@ class DataContainer(ComponentModel):
         # Initialize outputs dictionary
         out = {}
 
-        obs_name = self.obs_name
         # Check that time_point coincide with one of the saved time_points
         try:
             time_index = np.where(self.time_points==time_point/365.25)[0][0]
@@ -376,7 +387,7 @@ class DataContainer(ComponentModel):
                 'Observation {} of data container {} is requested at time ',
                 'point {} not presented in the linked data set. Please check ',
                 'setup of the data container.']).format(
-                    self.obs_name, self.name, time_point)
+                    self.obs_names[0], self.name, time_point)
             logging.error(err_msg)
             raise IndexError(err_msg)
         else:
@@ -387,20 +398,45 @@ class DataContainer(ComponentModel):
                                      self.data_setup[index][time_index+1])
             # Get data
             obtained_data = self.reader(file_name, **self.reader_kwargs)
-            out[obs_name] = obtained_data
+            if isinstance(obtained_data, dict):
+                for obs_nm in self.obs_names:
+                    try:
+                        out[obs_nm] = obtained_data[obs_nm]
+                    except KeyError:
+                        err_msg = ''.join([
+                            'Data files linked to data container {} do not ',
+                            'contain data corresponding to observation {}. ',
+                            'Please check setup of the data container.']).format(
+                                self.name, obs_nm)
+                        logging.error(err_msg)
+                        raise KeyError(err_msg)
+            else:  # if no dictionary is returned, assume this is the data requested
+                if len(self.obs_names) == 1:
+                    out[self.obs_names[0]] = obtained_data
+                else:
+                    err_msg = ''.join([
+                        'Several observation names were provided ({}) but ',
+                        'only one data structure is returned for data container {}. ',
+                        'Please check setup of the data container.']).format(
+                            self.obs_names, self.name)
+                    logging.error(err_msg)
+                    raise ValueError(err_msg)
 
             # Check whether baseline data is present
             if self.baseline_in:
                 if time_index == 0:  # initial_point
                     # Assign baseline data to the instance attribute
-                    self.baseline_data = obtained_data
-                    out['delta_{}'.format(obs_name)] = np.zeros(
-                        out[obs_name].shape, dtype=np.float32)
+                    for nm in self.obs_names:
+                        self.baseline_data[nm] = out[nm]
+                        out['delta_{}'.format(nm)] = np.zeros(
+                            out[nm].shape, dtype=np.float32)
                 else:
-                    # Obtain difference between
-                    out['delta_{}'.format(obs_name)] = \
-                        out[obs_name] - self.baseline_data
-                out['baseline_{}'.format(obs_name)] = self.baseline_data
+                    # Obtain difference between baseline and current time point data
+                    for nm in self.obs_names:
+                        out['delta_{}'.format(nm)] = \
+                            out[nm] - self.baseline_data[nm]
+                for nm in self.obs_names:
+                    out['baseline_{}'.format(nm)] = self.baseline_data[nm]
 
             return out
 
@@ -435,7 +471,7 @@ class DataContainer(ComponentModel):
             if time_point is None:
                 time_point = self.indices[0]*365.25
             output_data = self.export(p=p, time_point=time_point)
-            data = output_data[self.obs_name]
+            data = output_data[self.obs_names[0]]
 
         # Get data shape
         data_shape = data[list(data.keys())[0]].shape
