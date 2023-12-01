@@ -28,6 +28,7 @@ class DataContainer(ComponentModel):
     def __init__(self, name, parent, family, obs_name, data_directory='',
                  data_setup=None, time_points=None, baseline=False,
                  data_reader=None, data_reader_kwargs=None,
+                 data_reader_time_index=False,
                  container_class='DataContainer',
                  model_kwargs=None, presetup=False):
         """
@@ -72,10 +73,20 @@ class DataContainer(ComponentModel):
             and current time point data. In the latter case a new observation
             called 'delta_###' where '###' is obs_name can also be returned.
         data_reader : str or function
-            name of function that reads data file and returns a numpy.ndarray containing data
+            name of function that reads data file and returns a numpy.ndarray
+            containing data or dictionary of numpy.ndarrays
         data_reader_kwargs : dict
             Dictionary of additional keyword arguments applicable to a particular
-            data reader method.
+            data reader method
+        data_reader_time_index : boolean
+            Flag indicating whether data reader requires time index to be passed
+            as one of the key arguments. This might be needed if all time points
+            data is saved in one data file versus multiple and file name does not
+            determine what time point the data corresponds to
+        presetup : boolean
+            Flag indicating whether the add_obs_to_be_linked method should be
+            used on this object to add observations to be used as inputs for
+            other components
 
         Returns
         -------
@@ -93,7 +104,7 @@ class DataContainer(ComponentModel):
         self.family = family
 
         # Setup baseline data related attributes
-        self.baseline_data = dict() # empty dictionary
+        self.baseline_data = {}  # empty dictionary
         self.baseline_in = baseline
 
         # Process obs_name argument
@@ -117,6 +128,7 @@ class DataContainer(ComponentModel):
         self.reader_kwargs = {}
         if data_reader_kwargs is not None:
             self.reader_kwargs = data_reader_kwargs
+        self.reader_time_index = data_reader_time_index
 
         # Add type attribute
         self.class_type = container_class
@@ -397,6 +409,8 @@ class DataContainer(ComponentModel):
                                      self.data_setup[index]['folder'],
                                      self.data_setup[index][time_index+1])
             # Get data
+            if self.reader_time_index:
+                self.reader_kwargs['time_index'] = time_index
             obtained_data = self.reader(file_name, **self.reader_kwargs)
             if isinstance(obtained_data, dict):
                 for obs_nm in self.obs_names:
