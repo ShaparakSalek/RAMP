@@ -49,26 +49,23 @@ class BaseConfiguration():
         self.source_class = sc_name
         self.receiver_class = rc_name
 
-        # Check whether both sources and receivers are provided
-        if sources is None and receivers is None:
-            # Create empty SeismicSurvey
-            self._sources = []
-            self.num_sources = 0
-            self._receivers = []
-            self.num_receivers = 0
+        # Initialize configuration attributes
+        self._sources = None
+        self.num_sources = 0
+        self._receivers = None
+        self.num_receivers = 0
 
-        else:
-            if sources is not None:
-                # Create set of sources
-                self.num_sources = sources.shape[0]
-                self._sources = self.create_point_set(
-                    'sources', sources, self, POINTS_CLASS[sc_name])
+        if sources is not None:
+            # Create set of sources
+            self.num_sources = sources.shape[0]
+            self._sources = self.create_point_set(
+                'sources', sources, self, POINTS_CLASS[sc_name])
 
-            if receivers is not None:
-                # Create set of receivers
-                self.num_receivers = receivers.shape[0]
-                self._receivers = self.create_point_set(
-                    'receivers', receivers, self, POINTS_CLASS[rc_name])
+        if receivers is not None:
+            # Create set of receivers
+            self.num_receivers = receivers.shape[0]
+            self._receivers = self.create_point_set(
+                'receivers', receivers, self, POINTS_CLASS[rc_name])
 
     @property
     def sources(self):
@@ -80,9 +77,9 @@ class BaseConfiguration():
             self._sources = self.create_point_set(
                 'sources', new_sources, self, POINTS_CLASS[self.source_class])
             self.num_sources = len(new_sources)
-        elif hasattr(new_sources, 'points'):  # set of sources
+        elif hasattr(new_sources, 'elements'):  # set of sources
             self._sources = new_sources
-            self.num_sources = len(new_sources.points)
+            self.num_sources = len(new_sources.elements)
 
     @property
     def receivers(self):
@@ -94,9 +91,9 @@ class BaseConfiguration():
             self._receivers = self.create_point_set(
                 'receivers', new_receivers, self, POINTS_CLASS[self.receiver_class])
             self.num_receivers = len(new_receivers)
-        elif hasattr(new_receivers, 'points'):  # set of receivers
+        elif hasattr(new_receivers, 'elements'):  # set of receivers
             self._receivers = new_receivers
-            self.num_receivers = len(new_receivers.points)
+            self.num_receivers = len(new_receivers.elements)
 
     @staticmethod
     def create_point_set(name, point_coords, config, point_class):
@@ -106,3 +103,116 @@ class BaseConfiguration():
             point.config = config
 
         return point_set
+
+    def plot_configuration(self):
+        """
+        Visualize location of sources and receivers.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.receivers is None:
+            warn_msg = ''.join(['Method plot_configuration cannot visualize ',
+                                'configuration "{}" since receivers ',
+                                '(and, possibly, sources) ',
+                                'are not defined.']).format(self.name)
+            logging.warning(warn_msg)
+        else:
+            # Initialize figure
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
+            fig_title = 'Distribution of receivers for {}'
+
+            # Check whether sources are available
+            if self.sources is not None:
+                if self.sources.elements:
+                    fig_title = 'Distribution of sources and receivers for {}'
+                    # Plot the first source
+                    ax.scatter(self._sources.elements[0].x,
+                               self._sources.elements[0].y,
+                               self._sources.elements[0].z,
+                               marker='o', c='red', label='sources')
+
+                    # Plot the rest of the sources
+                    for ind in range(1, self.num_sources):
+                        ax.scatter(self._sources.elements[ind].x,
+                                   self._sources.elements[ind].y,
+                                   self._sources.elements[ind].z,
+                                   marker='o', c='red')
+
+            # Plot the first receiver
+            ax.scatter(self._receivers.elements[0].x,
+                       self._receivers.elements[0].y,
+                       self._receivers.elements[0].z,
+                       marker='s', c='blue', label='receivers')
+
+            # Plot the rest of the receivers
+            for ind in range(1, self.num_receivers):
+                ax.scatter(self._receivers.elements[ind].x,
+                           self._receivers.elements[ind].y,
+                           self._receivers.elements[ind].z,
+                           marker='s', c='blue')
+
+            ax.set_xlabel('x, [m]')
+            ax.set_ylabel('y, [m]')
+            ax.set_zlabel('z, [m]')
+            ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0))
+
+            fig.suptitle(fig_title.format(self.name))
+
+            plt.show()
+
+
+def test_base_configuration1():
+    # Define coordinates of sources
+    num_sources = 9
+    sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
+                    np.zeros(num_sources),
+                    np.zeros(num_sources)]
+
+    # Define coordinates of receivers
+    num_receivers = 101
+    receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
+                      np.zeros(num_receivers),
+                      np.zeros(num_receivers)]
+
+    # Create survey configuration with defined coordinates
+    configuration = BaseConfiguration(sources, receivers, name='Config 1')
+
+    # Plot survey to see if it is created correctly
+    configuration.plot_configuration()
+
+
+def test_base_configuration2():
+    # Define coordinates of receivers
+    nx = 7
+    ny = 12
+    nz = 5
+    num_p = nx*ny*nz
+
+    xyz_coords = np.zeros((num_p, 3))
+    x = np.linspace(0, 700, num=nx)
+    y = np.linspace(0, 600, num=ny)
+    z = np.linspace(0, 2000, num=nz)
+
+    xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+    xyz_coords[:, 0] = xx.reshape((num_p, ))
+    xyz_coords[:, 1] = yy.reshape((num_p, ))
+    xyz_coords[:, 2] = zz.reshape((num_p, ))
+
+    # Create survey configuration with defined coordinates
+    configuration = BaseConfiguration(
+        sources=None, receivers=xyz_coords, name='Config 2')
+
+    # Plot survey to see if it is created correctly
+    configuration.plot_configuration()
+
+
+if __name__ == "__main__":
+
+    test_case = 2
+    available_tests = {1: test_base_configuration1,
+                       2: test_base_configuration2}
+    available_tests[test_case]()

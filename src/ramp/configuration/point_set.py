@@ -61,6 +61,7 @@ class PointSet():
         if xyz_coords is not None:
             self.num_elements = xyz_coords.shape[0]
             self.coordinates = xyz_coords
+            # _elements is a list of objects of class Point
             self._elements = self.create_points_list(xyz_coords, point_class)
             self.set_additional_attributes(xyz_coords)
 
@@ -159,9 +160,9 @@ class PointSet():
         x, y, z = np.meshgrid(kwargs['x'], kwargs['y'], kwargs['z'],
                               indexing='ij')
         self.coordinates = np.zeros((self.num_elements, 3))
-        self.coordinates[:, 0] = x.reshape(x, (self.num_elements, ))
-        self.coordinates[:, 1] = y.reshape(y, (self.num_elements, ))
-        self.coordinates[:, 2] = z.reshape(z, (self.num_elements, ))
+        self.coordinates[:, 0] = x.reshape((self.num_elements, ))
+        self.coordinates[:, 1] = y.reshape((self.num_elements, ))
+        self.coordinates[:, 2] = z.reshape((self.num_elements, ))
 
         self._elements = self.create_points_list(self.coordinates)
 

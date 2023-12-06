@@ -82,60 +82,6 @@ class SeismicSurveyConfiguration(BaseConfiguration):
         """
         self.num_arrays, self._arrays = array_creator(**array_creator_kwargs)
 
-    def plot_configuration(self):
-        """
-        Visualize location of sources and receivers.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.sources.elements and self.receivers.elements:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            # Plot the first source
-            ax.scatter(self._sources.elements[0].x,
-                       self._sources.elements[0].y,
-                       self._sources.elements[0].z,
-                       marker='o', c='red', label='sources')
-
-            # Plot the rest of the sources
-            for ind in range(1, self.num_sources):
-                ax.scatter(self._sources.elements[ind].x,
-                           self._sources.elements[ind].y,
-                           self._sources.elements[ind].z,
-                           marker='o', c='red')
-
-            # Plot the first receiver
-            ax.scatter(self._receivers.elements[0].x,
-                       self._receivers.elements[0].y,
-                       self._receivers.elements[0].z,
-                       marker='s', c='blue', label='receivers')
-
-            # Plot the rest of the receivers
-            for ind in range(1, self.num_receivers):
-                ax.scatter(self._receivers.elements[ind].x,
-                           self._receivers.elements[ind].y,
-                           self._receivers.elements[ind].z,
-                           marker='s', c='blue')
-
-            ax.set_xlabel('x, [m]')
-            ax.set_ylabel('y, [m]')
-            ax.set_zlabel('z, [m]')
-            ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0))
-
-            fig.suptitle('Distribution of sources and receivers for {}'.format(self.name))
-
-            plt.show()
-        else:
-            warn_msg = ''.join(['Method plot_configuration cannot produce ',
-                                'figure of configuration for a seismic ',
-                                'survey "{}" since either sources or receivers ',
-                                '(or both) are not defined.']).format(self.name)
-            logging.warning(warn_msg)
-
-
     def create_survey_configuration(self, name, source_indices, receiver_indices):
         """
         Produce new SeismicSurveyConfiguration instance based on subset of sources and
@@ -461,7 +407,7 @@ def test_array_creator():
 
 if __name__ == "__main__":
 
-    test_case = 4
+    test_case = 1
     available_tests = {1: test_seismic_configuration1,
                        2: test_seismic_configuration2,
                        3: test_seismic_configuration3,
