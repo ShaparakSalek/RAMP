@@ -28,7 +28,8 @@ class SeismicEvaluation(MonitoringTechnology):
         Parameters
         ----------
         name : str
-            Name of SeismicEvaluation instance under which it will be known to its parent
+            Name of SeismicEvaluation class instance under which it will be
+            known to its parent
         parent : SystemModel class instance
             System model to which the instance belongs
         time_points : str or numpy.array, optional
@@ -100,7 +101,9 @@ class SeismicEvaluation(MonitoringTechnology):
         ----------
         p : dict
             Parameters of component
-        time_point :
+        time_point : float
+            time point (in days) for which the component outputs
+            are to be calculated; by default, its value is 0 days
         metric : float
             Data metric to be compared to a threshold.
 
@@ -116,12 +119,13 @@ class SeismicEvaluation(MonitoringTechnology):
 
         # TODO Include check for criteria if need arises in the future
 
-        # Compare metric against threshold
         # Set defaults
         leak_detected_ts = 0
         detection_time_ts = np.inf
 
+        # Compare metric against threshold
         if metric >= actual_p['threshold']:
+            # These observations keep track of history: ts for time series
             leak_detected_ts = 1
             detection_time_ts = time_point
 
@@ -129,18 +133,29 @@ class SeismicEvaluation(MonitoringTechnology):
                'detection_time_ts': detection_time_ts}
 
         if leak_detected_ts:  # leak detected at the current time point
-            if self.accumulators['leak_detected'].sim:  # leak was detected previously
+            if self.accumulators['leak_detected'].sim == 1:  # leak was detected previously
+                # Detection time would be time in the past obtained from accumulator
                 out['detection_time'] = self.accumulators['detection_time'].sim
-            else:  # leak was not detected previously
+            else:  # leak was not detected previously (attribute sim is 0)
+                # Detection time would be current time point
                 out['detection_time'] = time_point
+                # Update accumulators
                 self.accumulators['detection_time'].sim = time_point
                 self.accumulators['leak_detected'].sim = 1
+            # Leak is considered to be detected at the current time point
             out['leak_detected'] = 1
         else:  # leak is not detected at the current time point
             if self.accumulators['leak_detected'].sim:  # leak was detected previously
+                # If leak was detected previously but not now it means
+                # the measured quantity is no longer over the threshold
+                # It's a rare situation but still possible
+                # Detection time would be time in the past obtained from accumulator
                 out['detection_time'] = self.accumulators['detection_time'].sim
+                # Leak was detected in the past so it's still considered
+                # detected even if it's not detected at the current time point
                 out['leak_detected'] = 1
-            else:  # leak was not detected previously
+            else:  # leak was not detected previously and at the current time point
+                # The outputs assume default initial values
                 out['detection_time'] = np.inf
                 out['leak_detected'] = 0
                 self.accumulators['detection_time'].sim = np.inf
@@ -149,7 +164,7 @@ class SeismicEvaluation(MonitoringTechnology):
         return out
 
 
-def test_scenario_seismic():
+def test_seismic_evaluation():
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10
@@ -365,4 +380,4 @@ def test_scenario_seismic():
 
 if __name__ == "__main__":
 
-    test_scenario_seismic()
+    test_seismic_evaluation()

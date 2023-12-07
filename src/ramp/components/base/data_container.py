@@ -582,7 +582,7 @@ def process_time_points(time_points, data_directory=None,
     raise TypeError('Argument time_points is of wrong type.')
 
 
-def test_scenario_velocity():
+def test_data_container():
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10
@@ -654,4 +654,4 @@ def test_scenario_velocity():
 
 if __name__ == "__main__":
 
-    test_scenario_velocity()
+    test_data_container()

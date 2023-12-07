@@ -176,7 +176,7 @@ class SeismicDataContainer(DataContainer):
             return data_out
 
 
-def test_scenario_seismic():
+def test_seismic_data_container():
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10
@@ -283,4 +283,4 @@ def test_scenario_seismic():
 
 if __name__ == "__main__":
 
-    test_scenario_seismic()
+    test_seismic_data_container()
