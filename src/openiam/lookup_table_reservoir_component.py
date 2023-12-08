@@ -861,7 +861,7 @@ class LookupTableReservoir(ComponentModel):
             logging.error(err_msg)
             raise KeyError(err_msg)
 
-    def simulation_model(self, p, time_point=365.35,
+    def simulation_model(self, p, time_point=365.25,
                          locX=None, locY=None, locZ=None):
         """
         Return pressure and |CO2| saturation at the bottom of leaking well.
@@ -962,7 +962,7 @@ class LookupTableReservoir(ComponentModel):
                         self.num_points, self.tri_vertices, self.tri_weights = find_weights(
                             (self.locX, self.locY, self.locZ), interpr.triangulation)
 
-        # Initialize dictionary of leakage rates
+        # Initialize output dictionary
         out = dict()
 
         # Extract index from updated dictionary
@@ -1019,10 +1019,9 @@ class LinkError(Exception):
     table reservoir component is not linked to any interpolator family.
     """
 
-if __name__ == "__main__":
-
+def test_lookup_table_reservoir_component(test_case=1):
     logging.basicConfig(level=logging.WARNING)
-    test_case = 1
+
     if test_case == 1:
         data_set_fldr = 'Kimb_54_sims'
         loc_x = 37478.0

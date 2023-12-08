@@ -88,7 +88,7 @@ def read_data_headers(is_hdf5_file, header_file_dir, data_file):
     return data_headers
 
 
-class AnimatedScatterPlot(object):
+class AnimatedScatterPlot():
     def __init__(self, interp_obj, obs_nm='pressure'):
         """
         Constructor method of AnimatedScatterPlot class.
@@ -188,7 +188,7 @@ def data_scatter_plot(x, y, data, title=None, cmap='viridis', cbar_label=None,
     return fig, ax
 
 
-class ReservoirDataInterpolator(object):
+class ReservoirDataInterpolator():
     """ NRAP-Open-IAM ReservoirDataInterpolator class. """
     def __init__(self, name, parent, header_file_dir, time_file, data_file, index,
                  signature, default_values=None, interp_2d=True,
@@ -970,10 +970,7 @@ def test_case2():
     #  [[0.5 0.  0.  0.5]]
 
 
-if __name__ == "__main__":
-
-    # Setup test
-    test = 1
+def test_reservoir_data_interpolator(test=1):
 
     if test == 1:
         test_case1()
