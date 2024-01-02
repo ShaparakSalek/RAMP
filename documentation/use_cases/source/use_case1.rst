@@ -185,3 +185,66 @@ of the source. The list of monitoring plans are labelled and organized
 into 3 stages, with the monitoring plans for each stage including
 the arrays and deployment times, the number of leakage scenarios detected,
 the list of particular scenarios detected, and the average time to detection.
+
+
+Use Case 1 Wellbore
+
+The next version of Use Case 1 designs optimal networks of wellbore-installed sensors such as pore pressure and CO2 saturation
+
+This version uses a similar approach as earlier, using a json or yaml file to store the user-defined variables:
+
+1. the edx key
+
+2. boolean values "download_data", "run_optimization", and "plot_results", which define which steps the user wants the script to run at this time. For example if the leakage scenario data has already been downloaded, then "download_data" can be switched to false and that step skipped in subsequent runs.
+
+3. the directory paths are defined by:
+3a. "directory_simulation_data", which defines where the leakage scenario dataset is to be stored
+3b. "directory_output_files", which defines where the output files from the optimization are stored
+3b. "directory_plots", which defines where the various output charts and graphs are stored
+
+4. "max_sensors", which defines how many sensors the algorithm can deploy
+
+5. "max_wells", which defines how many monitoring wells the algorithm can deploy, where multiple sensors can be installed in a single well
+
+6. "scenarios", which defines which of the provided leakage scenarios should be used in the analysis
+
+7. "threshold_co2", which defines the detection threshold for CO2 saturation sensors, or the magnitude of CO2 saturation which can be considered a detection rather than simple background noise
+
+8. "number_proposals", which defines the number of proposals that should be presented to the user in the summary files
+
+
+Rather than re-evaluating the monitoring plan at several user-specified timesteps, this approach re-evaluates the monitoring plan at each timestep, retaining any monitoring wells that were already drilled in earlier timesteps as those costs are already sunk
+
+This algorithm also uses three objectives rather than the previous two:
+
+1. Number of leaks detected (maximize)
+2. Average time to first detection (minimize)
+3. Average time to drilling wells (maximize)
+
+the third objective is new, and all else being equal it attempts to drill wells as late in the monitoring plan as possible in order to leave some flexibility to change the monitoring plan in later timesteps.
+
+Another wrinkle of this optimization approach is that the set of potential leakage scenarios itself changes over time. This is because in a real use-case, we might start with a list of potential leakage scenarios for a particular site, but then as the years go on our history matching algorithms or understanding of the field site may evolve, leading to new scenarios of concern.
+
+Therefore if the user specifies n leakage scenario files, the algorithm randomly chooses a set of n/2 leakage scenarios, and uses those to develop a set of monitoring plans starting from the first timestep. These monitoring plans represent every possible Pareto-optimal permutation of wellbore sensors.
+
+It then advances to the next timestep, randomly selects a few more of the leakage scenarios to add to the list, retains any monitoring wellbores and sensors already installed in the previous timestep, and considers every possible permutation of wellbores and sensors to add to the monitoring plan.
+
+In this way, the algorithm has to deal with a bit of a moving target, leaving some flexibility in place to make changes to the monitoring plan as time goes on.
+
+The outputs of the optmization are organized as a list of stages, where each stage corresponds to a timestep.
+
+At each stage, a list of monitoring plans are defined, a list of index values are defined which specify which of those monitoring plans are Pareto-optimal in terms of the three objectives, and a list of index values are defined which specify which leakage scenarios the algorithm was aware of at that point in time.
+
+Each monitoring plan is made up of a set of deployments, and a set of detections. The deployments represent wellbore sensors installed at a particular place (x,y,z) and time. The detections are index values representing which of the various leakage scenarios are detected by this particular combination of wellbore sensors.
+
+Each deployment is made up of a timestep value, a wellboreSensor, and a geophysical array. The geophysical array portion is currently under development. The wellbore sensor defines an i,j,k location for the sensor, and a sensor type such as pressure or CO2 saturation
+
+stages
+	-> monitoring plans
+		-> deployments
+			-> timestep
+			-> array
+			-> wellbore sensor
+		-> detections
+	-> pareto
+	-> iReals
