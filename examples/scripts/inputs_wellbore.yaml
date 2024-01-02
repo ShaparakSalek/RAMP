@@ -7,6 +7,6 @@ directory_output_files: .
 directory_plots: .
 max_sensors: 5
 max_wells: 2
-scenarios: 1-400
-threshold_co2: 5
+scenarios: 1-200
+threshold_co2: 10
 number_proposals: 3
