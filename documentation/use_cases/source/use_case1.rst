@@ -186,65 +186,141 @@ into 3 stages, with the monitoring plans for each stage including
 the arrays and deployment times, the number of leakage scenarios detected,
 the list of particular scenarios detected, and the average time to detection.
 
+********************************
+Use Case 1 Wellbore Measurements
+********************************
 
-Use Case 1 Wellbore
+The next version of Use Case 1 designs optimal networks of wellbore-installed
+sensors such as pore pressure and CO2 saturation
 
-The next version of Use Case 1 designs optimal networks of wellbore-installed sensors such as pore pressure and CO2 saturation
+This version uses a similar approach as earlier, using a json or yaml file to
+store the user-defined variables. As with previous use case follow
+the following instructions to run it:
 
-This version uses a similar approach as earlier, using a json or yaml file to store the user-defined variables:
+1. Navigate to the working directory *RAMP/examples/scripts*.
 
-1. the edx key
+2. Edit the "inputs_wellbore.yaml" file in order to modify
+   various variables controlling the way the optimization script runs.
 
-2. boolean values "download_data", "run_optimization", and "plot_results", which define which steps the user wants the script to run at this time. For example if the leakage scenario data has already been downloaded, then "download_data" can be switched to false and that step skipped in subsequent runs.
+    a. the edx key
 
-3. the directory paths are defined by:
-3a. "directory_simulation_data", which defines where the leakage scenario dataset is to be stored
-3b. "directory_output_files", which defines where the output files from the optimization are stored
-3b. "directory_plots", which defines where the various output charts and graphs are stored
+    b. boolean values "download_data", "run_optimization", and "plot_results",
+       which define which steps the user wants the script to run at this time.
+       For example, if the leakage scenario data has already been downloaded,
+       then "download_data" can be switched to false and that step will be skipped
+       in subsequent runs.
 
-4. "max_sensors", which defines how many sensors the algorithm can deploy
+    c. the directory paths are defined by:
 
-5. "max_wells", which defines how many monitoring wells the algorithm can deploy, where multiple sensors can be installed in a single well
+        * "directory_simulation_data", which defines where the leakage scenario
+          dataset is to be stored
 
-6. "scenarios", which defines which of the provided leakage scenarios should be used in the analysis
+        * "directory_output_files", which defines where the output files
+          from the optimization are stored
 
-7. "threshold_co2", which defines the detection threshold for CO2 saturation sensors, or the magnitude of CO2 saturation which can be considered a detection rather than simple background noise
+        * "directory_plots", which defines where the various output charts
+          and graphs are stored
 
-8. "number_proposals", which defines the number of proposals that should be presented to the user in the summary files
+    d. "max_sensors", which defines how many sensors the algorithm can deploy
 
+    e. "max_wells", which defines how many monitoring wells the algorithm can deploy,
+       where multiple sensors can be installed in a single well
 
-Rather than re-evaluating the monitoring plan at several user-specified timesteps, this approach re-evaluates the monitoring plan at each timestep, retaining any monitoring wells that were already drilled in earlier timesteps as those costs are already sunk
+    f. "scenarios", which defines which of the provided leakage scenarios
+       should be used in the analysis
 
-This algorithm also uses three objectives rather than the previous two:
+    g. "threshold_co2", which defines the detection threshold for CO2 saturation
+       sensors, or the magnitude of CO2 saturation which can be considered a detection
+       rather than simple background noise
+
+    h. "number_proposals", which defines the number of proposals that should
+       be presented to the user in the summary files
+
+3. Update the environment used for RAMP (whether it's through Anaconda
+   or command line) by adding an additional library needed for this use case
+   by running::
+
+    python -m pip install tqdm
+
+4. Run the optimization using the following command, depending on which
+   input file you chose to edit. Depending on your python installation,
+   you may need to use "python" instead of "python3" in this command::
+
+    python3 ramp_wellbore_dynamic.py inputs_wellbore.yaml
+
+Rather than re-evaluating the monitoring plan at several user-specified timesteps,
+this approach re-evaluates the monitoring plan at each timestep, retaining
+any monitoring wells that were already drilled in earlier timesteps
+as those costs are already sunk.
+
+This algorithm also uses three objectives rather than the two used in the original
+use case 1:
 
 1. Number of leaks detected (maximize)
+
 2. Average time to first detection (minimize)
+
 3. Average time to drilling wells (maximize)
 
-the third objective is new, and all else being equal it attempts to drill wells as late in the monitoring plan as possible in order to leave some flexibility to change the monitoring plan in later timesteps.
+The third objective is added in this use case, and under all conditions being equal
+the optimization attempts to simulate well drilling as late in the monitoring plan
+as possible in order to leave some flexibility to change the monitoring plan
+in later timesteps.
 
-Another wrinkle of this optimization approach is that the set of potential leakage scenarios itself changes over time. This is because in a real use-case, we might start with a list of potential leakage scenarios for a particular site, but then as the years go on our history matching algorithms or understanding of the field site may evolve, leading to new scenarios of concern.
+Another change of this optimization approach is that the set of potential leakage
+scenarios itself changes over time. This is because in a real use-case,
+one might start with a list of potential leakage scenarios for a particular site,
+but then as the years go on the history matching algorithms or understanding
+of the field site may evolve, leading to new scenarios of concern.
 
-Therefore if the user specifies n leakage scenario files, the algorithm randomly chooses a set of n/2 leakage scenarios, and uses those to develop a set of monitoring plans starting from the first timestep. These monitoring plans represent every possible Pareto-optimal permutation of wellbore sensors.
+Therefore, if the user specifies n leakage scenario files in the input file,
+the algorithm randomly selects a set of n/2 leakage scenarios, and uses those
+to develop a set of monitoring plans starting from the first timestep. These
+monitoring plans represent every possible Pareto-optimal permutation
+of wellbore sensors.
 
-It then advances to the next timestep, randomly selects a few more of the leakage scenarios to add to the list, retains any monitoring wellbores and sensors already installed in the previous timestep, and considers every possible permutation of wellbores and sensors to add to the monitoring plan.
+Then the algorithm advances to the next timestep, randomly selects a few more
+of the leakage scenarios to add to the list, retains any monitoring wellbores
+and sensors already installed in the previous timestep, and considers
+every possible permutation of wellbores and sensors to add to the monitoring plan.
 
-In this way, the algorithm has to deal with a bit of a moving target, leaving some flexibility in place to make changes to the monitoring plan as time goes on.
+In this way, the algorithm has to deal with a bit of a moving target,
+leaving some flexibility in place to make changes to the monitoring plan
+as time goes on.
 
-The outputs of the optmization are organized as a list of stages, where each stage corresponds to a timestep.
+The outputs of the optmization are organized as a list of stages,
+where each stage corresponds to a timestep.
 
-At each stage, a list of monitoring plans are defined, a list of index values are defined which specify which of those monitoring plans are Pareto-optimal in terms of the three objectives, and a list of index values are defined which specify which leakage scenarios the algorithm was aware of at that point in time.
+At each stage, a list of monitoring plans are defined, a list of index values
+is returned specifying which of those monitoring plans are Pareto-optimal
+in terms of the three objectives. Additionally, a list of index values is returned
+specifying which leakage scenarios the algorithm was aware of at that point in time.
 
-Each monitoring plan is made up of a set of deployments, and a set of detections. The deployments represent wellbore sensors installed at a particular place (x,y,z) and time. The detections are index values representing which of the various leakage scenarios are detected by this particular combination of wellbore sensors.
+Each monitoring plan is made up of a set of deployments, and a set of detections.
+The deployments represent wellbore sensors installed at a particular place
+(x, y, z) and time. The detections are index values representing which of
+the various leakage scenarios are detected by this particular combination
+of wellbore sensors.
 
-Each deployment is made up of a timestep value, a wellboreSensor, and a geophysical array. The geophysical array portion is currently under development. The wellbore sensor defines an i,j,k location for the sensor, and a sensor type such as pressure or CO2 saturation
+Each deployment is made up of a timestep value, a wellboreSensor,
+and a geophysical array. The geophysical array portion is currently under development.
+The wellbore sensor defines an i, j, k location for the sensor, and a sensor
+type such as pressure or CO2 saturation.
 
 stages
+
 	-> monitoring plans
+
 		-> deployments
+
 			-> timestep
+
 			-> array
+
 			-> wellbore sensor
+
 		-> detections
+
 	-> pareto
+
 	-> iReals
