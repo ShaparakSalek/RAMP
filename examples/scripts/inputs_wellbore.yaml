@@ -2,9 +2,9 @@ edx_api_key: your-edx-key-here
 download_data: true
 run_optimization: true
 plot_results: true
-directory_simulation_data: /root/build_synth_hdf5s/kimb
-directory_output_files: .
-directory_plots: .
+directory_simulation_data: output
+directory_output_files: output
+directory_plots: output
 max_sensors: 5
 max_wells: 2
 scenarios: 1-200

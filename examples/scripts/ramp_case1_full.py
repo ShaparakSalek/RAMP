@@ -42,7 +42,6 @@ import time
 mpl.use('Agg')
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.sep.join(['..', '..', 'source']))
 sys.path.insert(0, os.sep.join(['..', '..', 'src']))
 
 from openiam import SystemModel
