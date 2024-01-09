@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb  8 09:36:20 2023
-
 @author: Veronika Vasylkivska (Veronika.Vasylkivska@NETL.DOE.GOV)
 LRST (Battelle) supporting NETL
 """
@@ -17,7 +15,7 @@ from ramp.components.base import process_time_points, get_indices
 
 def default_map_dim_index_2_point_index(multi_index, dims):
     """
-
+    Convert a tuple of index arrays into flat index
 
     Parameters
     ----------
@@ -27,12 +25,48 @@ def default_map_dim_index_2_point_index(multi_index, dims):
     dims : tuple of integers
         The shape of array into which the indices from multi_index apply.
 
-    Returns
+    Returns an index of element in a flat array.
     -------
     None.
 
     """
+    # The elements are assumed to be read in row-major style (C - by default)
     return np.ravel_multi_index(multi_index, dims)
+
+def default_map_point_index_2_dim_index(flat_index, dims):
+    """
+    Convert a flat index into a tuple of multidimensional indices
+
+    Parameters
+    ----------
+    flat_index : integer, or array-like of integers
+        Index of element within an array.
+
+    dims : tuple of integers
+        The shape of array into which the indices for returned multi_index apply.
+
+    Returns a tuple of indices.
+    -------
+    None.
+
+    """
+    return np.unravel_index(flat_index, shape)
+
+def get_measurements(dim_indices, data=None, baseline=None, criteria=1):
+
+    # if data is provided
+    if data is not None:
+        data_point = data[dim_indices]
+        # if baseline data is provided
+        if baseline is not None:
+            base_data_point = baseline[dim_indices]
+            comp_data = data_point - base_data_point
+        else:
+            comp_data = data_point
+        if criteria == 2:
+            comp_data = np.abs(comp_data)
+
+    return comp_data
 
 
 class InSituMeasurements(MonitoringTechnology):
@@ -97,8 +131,11 @@ class InSituMeasurements(MonitoringTechnology):
         # Setup attribute data_indices
         self.get_indices(dim_indices=dim_indices)
 
+        # Setup index of the data point
+        self.point_index = None  # not known until data is made available to the component
+
         # Set coordinates of the data point
-        self.data_coords = []  # empty list
+        self.point_coords = []  # empty list
 
         # Add default threshold parameter
         self.add_default_par('threshold', value=0.0)
@@ -128,20 +165,18 @@ class InSituMeasurements(MonitoringTechnology):
     def get_coordinates(self, data_shape):
         if self.index_map is not None:
             # Get point index from dim_indices and data_shape
-            point_index = self.index_map(self.data_indices, data_shape)
+            self.point_index = self.index_map(self.data_indices, data_shape)
             # Check that the configuration is consistent with point_index
-            if point_index < self.configuration.num_receivers:
+            if self.point_index < self.configuration.num_receivers:
                 # Get coordinates
-                point_coords = self.configuration.receivers.coordinates[point_index]
+                self.point_coords = self.configuration.receivers.coordinates[
+                    self.point_index]
             else:
                 err_msg = 'Data shape is inconsistent with requested data point.'
                 raise ValueError(err_msg)
         else:
             # If no map is provided
-            point_coords = list(self.data_indices)
-
-        return point_coords
-
+            self.point_coords = list(self.data_indices)
 
     def process_data(self, p, time_point=None, data=None, baseline=None,
                      dim_indices=None):
@@ -183,8 +218,9 @@ class InSituMeasurements(MonitoringTechnology):
         time_index = np.where(self.time_points==time_point/365.25)[0][0]
         if time_index == 0:
             # Update point coordinates
-            self.data_coords = self.get_coordinates(data.shape)
-            out['receiver_xyz'] = self.data_coords
+            self.get_coordinates(data.shape)
+            out['receiver_xyz'] = self.point_coords
+            # Get the closest neighbors coordinates
 
         # Set output defaults
         leak_detected_ts = 0
@@ -233,23 +269,6 @@ class InSituMeasurements(MonitoringTechnology):
                 self.accumulators['leak_detected'].sim = 0
 
         return out
-
-
-def get_measurements(dim_indices, data=None, baseline=None, criteria=1):
-
-    # if data is provided
-    if data is not None:
-        data_point = data[dim_indices]
-        # if baseline data is provided
-        if baseline is not None:
-            base_data_point = baseline[dim_indices]
-            comp_data = data_point - base_data_point
-        else:
-            comp_data = data_point
-        if criteria == 2:
-            comp_data = np.abs(comp_data)
-
-    return comp_data
 
 
 def test_in_situ_measurements():

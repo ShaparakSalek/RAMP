@@ -46,6 +46,9 @@ def default_h5_file_reader(file_name, time_index=0, obs_name='pressure'):
             for nm in obs_name:
                 data[nm] = hf[key_to_read][nm][()]
 
+                if nm == 'gravity':
+                    data[nm] = data[nm].T
+
         return data
 
     raise FileNotFoundError('File {} is not found.'.format(file_name))

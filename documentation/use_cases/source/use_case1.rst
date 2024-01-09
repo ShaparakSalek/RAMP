@@ -242,11 +242,10 @@ the following instructions to run it:
 
     python -m pip install tqdm
 
-4. Run the optimization using the following command, depending on which
-   input file you chose to edit. Depending on your python installation,
-   you may need to use "python" instead of "python3" in this command::
+4. Run the optimization using the following command. Depending on your python installation,
+   you may need to use "python3" instead of "python" in this command::
 
-    python3 ramp_wellbore_dynamic.py inputs_wellbore.yaml
+    python ramp_wellbore_dynamic.py inputs_wellbore.yaml
 
 Rather than re-evaluating the monitoring plan at several user-specified timesteps,
 this approach re-evaluates the monitoring plan at each timestep, retaining

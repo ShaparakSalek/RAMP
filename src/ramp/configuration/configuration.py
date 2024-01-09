@@ -33,9 +33,14 @@ class BaseConfiguration():
             Array of x, y, z coordinates of sources of a given configuration
         receivers : numpy.array of shape (nreceivers, 3)
             Array of x, y, z coordinates of sources of a given configuration
-
         name : string, optional
             Name of configuration
+        sc_name : string, optional
+            Shortcut to the source class name. Possible options: 'source'
+            for Source class and 'point' for Point class
+        rc_name : string, optional
+            Shortcut to the receiver class name. Possible options: 'receiver'
+            for Receiver class and 'point' for Point class
 
         Returns
         -------
@@ -73,6 +78,20 @@ class BaseConfiguration():
 
     @sources.setter
     def sources(self, new_sources):
+        """
+        Sets _sources attribute of the class using provided argument
+
+        Parameters
+        ----------
+        new_sources : numpy.array or PointSet instance
+            Coordinates of the new sources provided as an array or as a PointSet
+            instance
+
+        Returns
+        -------
+        None.
+
+        """
         if type(new_sources) is np.ndarray:  # numpy.array with coordinates
             self._sources = self.create_point_set(
                 'sources', new_sources, self, POINTS_CLASS[self.source_class])
@@ -87,6 +106,20 @@ class BaseConfiguration():
 
     @receivers.setter
     def receivers(self, new_receivers):
+        """
+        Sets _receivers attribute of the class using provided argument
+
+        Parameters
+        ----------
+        new_receivers : numpy.array or PointSet instance
+            Coordinates of the new receivers provided as an array or as a PointSet
+            instance
+
+        Returns
+        -------
+        None.
+
+        """
         if type(new_receivers) is np.ndarray:  # numpy.array with coordinates
             self._receivers = self.create_point_set(
                 'receivers', new_receivers, self, POINTS_CLASS[self.receiver_class])
@@ -97,6 +130,27 @@ class BaseConfiguration():
 
     @staticmethod
     def create_point_set(name, point_coords, config, point_class):
+        """
+        Create point set from the provided arguments.
+
+        Parameters
+        ----------
+        name : string
+            Name of the new configuration
+        point_coords : numpy.array of shape (npoints, 3)
+            Array of x, y, z coordinates of points to be added to the point set
+        config : Instance of BaseConfiguration class
+            Configuration to which the point set will belong
+        point_class : class Point or inherited from Point
+            This is a class not an instance of class which will be used to create
+            members of the point set
+
+        Returns
+        -------
+        point_set : Instance of PointSet class
+            Point set.
+
+        """
         point_set = PointSet(name, point_coords, point_class=point_class)
 
         for point in point_set.elements:

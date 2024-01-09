@@ -368,6 +368,8 @@ def remove_future_wells(oldPlans, tt):
 
 
 if inputs['download_data']:
+    print('Downloading data...')
+    print(20*'-')
     headers = {"EDX-API-Key": inputs['edx_api_key']}
 
     data = {
@@ -402,6 +404,7 @@ if inputs['download_data']:
                 print("ERROR: something went wrong during data files download")
 
     print('Unzipping downloaded data file...')
+    print(20*'-')
     with zipfile.ZipFile(os.sep.join([download_directory, fname]), 'r') as zip_ref:
         folder_to_extract = download_directory
         try:
@@ -410,6 +413,8 @@ if inputs['download_data']:
             pass
 
 if inputs['run_optimization'] or inputs['plot_results']:
+    print('Setting up optimization...')
+    print(20*'-')
     # load one HDF5 file into memory to get the shape of the dataset, min/max values etc
     file = h5py.File(download_directory+'/sim%04i.h5'%1, 'r')
     nx, ny, nz = np.array(file['plot0']['pressure']).shape
@@ -451,7 +456,8 @@ if inputs['run_optimization'] or inputs['plot_results']:
     nn = satuBool.shape[0]
 
 if inputs['run_optimization']:
-
+    print('\nStarting optimization process...')
+    print(20*'-')
     stages = []
     for tt in range(nt):
 
@@ -464,7 +470,6 @@ if inputs['run_optimization']:
             input_plans = np.array(stages[-1].plans)[stages[-1].pareto]
             input_plans = remove_future_wells(input_plans, tt)
 
-        print(' ')
         print('Building monitoring plans for years %i-%i of %i'%(tt*10, (tt+1)*10, (nt*10)))
         plans  = []
         pareto = []
@@ -535,7 +540,8 @@ if inputs['run_optimization']:
             next_file)
 
 if inputs['plot_results']:
-
+    print('Creating output figures...')
+    print(20*'-')
     filename = os.sep.join([inputs['directory_output_files'], 'wellbore_results.pkl'])
     with open(filename, 'rb') as next_file:
         stages = pickle.load(next_file)['stages']
@@ -840,3 +846,15 @@ if inputs['plot_results']:
             plt.savefig('monitoringPlan_selected_%02i_%05i.png'%(iStage, iPlan),
                         format='png', bbox_inches='tight')
             plt.close()
+
+if inputs['download_data']:
+    print('Check downloaded data files in the folder:',
+          os.path.abspath(os.path.join(os.getcwd(), inputs['directory_simulation_data'])))
+
+if inputs['run_optimization']:
+    print('Check produced output files in the folder:',
+          os.path.abspath(os.path.join(os.getcwd(), inputs['directory_output_files'])))
+
+if inputs['plot_results']:
+    print('Check produced output figures in the folder:',
+          os.path.abspath(os.path.join(os.getcwd(), inputs['directory_plots'])))
