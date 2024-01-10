@@ -33,6 +33,7 @@ def default_h5_file_reader(file_name, time_index=0, obs_name='pressure'):
         Data loaded from the provided file.
 
     """
+
     if os.path.isfile(file_name):
         if isinstance(obs_name, str):
             obs_name = [obs_name]
@@ -48,7 +49,6 @@ def default_h5_file_reader(file_name, time_index=0, obs_name='pressure'):
 
                 if nm == 'gravity':
                     data[nm] = data[nm].T
-
         return data
 
     raise FileNotFoundError('File {} is not found.'.format(file_name))

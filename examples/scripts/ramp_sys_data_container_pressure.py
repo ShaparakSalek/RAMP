@@ -43,13 +43,13 @@ if __name__ == "__main__":
     for ind in range(1, num_scenarios+1):
         data_setup[ind] = {'folder': 'sim0001_0100'}
         for t_ind in range(1, num_time_points+1):
-            data_setup[ind]['t{}'.format(t_ind)] = 'sim{:04}.h5'.format(ind)
+            data_setup[ind][f't{t_ind}'] = f'sim{ind:04}.h5'
     baseline = False
 
-    # ------------- Create system model -------------
+    # Create system model
     sm = SystemModel(model_kwargs=sm_model_kwargs)
 
-    # ------------- Add data container -------------
+    # Add data container
     dc = sm.add_component_model_object(
         DataContainer(name='dc', parent=sm, family=family, obs_name=obs_name,
                       data_directory=data_directory, data_setup=data_setup,
@@ -59,11 +59,12 @@ if __name__ == "__main__":
                       data_reader_time_index=True
                       ))
     # Add parameters of the container
-    dc.add_par('index', value=1, vary=False)
+    dc.add_par('index', value=3, vary=False)
     # Add gridded observation
     for nm in obs_name:
         dc.add_grid_obs(nm, constr_type='matrix', output_dir=output_directory)
 
+    # Run system model
     print('Forward simulation started...')
     print('-----------------------------')
     sm.forward()
@@ -106,8 +107,7 @@ if __name__ == "__main__":
     # first subplot
     ax = fig.add_subplot(121)
     ax_im = ax.pcolormesh(x, y, dpressure_data[t_ind, :, :, z_ind].T, cmap=cmap)
-    ax.set_title('Delta pressure at t={} years, depth={} m'.format(
-        time_points[t_ind], z[z_ind]))
+    ax.set_title(f'Delta pressure at t={time_points[t_ind]} years, depth={z[z_ind]} m')
     plt.colorbar(ax_im, label='dP, [Pa]')
     ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
     ax.set_xlabel('x, [m]')
@@ -117,8 +117,7 @@ if __name__ == "__main__":
     # second subplot
     ax = fig.add_subplot(122)
     ax_im = ax.pcolormesh(x, y, saturation_data[t_ind, :, :, z_ind].T, cmap=cmap)
-    ax.set_title('CO2 saturation at t={} years, depth={} m'.format(
-        time_points[t_ind], z[z_ind]))
+    ax.set_title(f'CO2 saturation at t={time_points[t_ind]} years, depth={z[z_ind]} m')
     plt.colorbar(ax_im, label='S, [-]')
     ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
     ax.set_xlabel('x, [m]')
@@ -132,8 +131,7 @@ if __name__ == "__main__":
     # first subplot
     ax = fig.add_subplot(121)
     ax_im = ax.pcolormesh(x, z, dpressure_data[t_ind, :, y_ind, :].T, cmap=cmap)
-    ax.set_title('Delta pressure at t={} years, y={} m'.format(
-        time_points[t_ind], y[y_ind]))
+    ax.set_title(f'Delta pressure at t={time_points[t_ind]} years, y={y[y_ind]} m')
     plt.colorbar(ax_im, label='dP, [Pa]')
     ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
     ax.set_xlabel('x, [m]')
@@ -144,8 +142,7 @@ if __name__ == "__main__":
     # second subplot
     ax = fig.add_subplot(122)
     ax_im = ax.pcolormesh(x, z, saturation_data[t_ind, :, y_ind, :].T, cmap=cmap)
-    ax.set_title('CO2 saturation at t={} years, y={} m'.format(
-        time_points[t_ind], y[y_ind]))
+    ax.set_title(f'CO2 saturation at t={time_points[t_ind]} years, y={y[y_ind]} m')
     plt.colorbar(ax_im, label='S, [-]')
     ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
     ax.set_xlabel('x, [m]')
@@ -160,8 +157,7 @@ if __name__ == "__main__":
     # first subplot
     ax = fig.add_subplot(121)
     ax_im = ax.pcolormesh(y, z, dpressure_data[t_ind, x_ind, :, :].T, cmap=cmap)
-    ax.set_title('Delta pressure at t={} years, x={} m'.format(
-        time_points[t_ind], x[x_ind]))
+    ax.set_title(f'Delta pressure at t={time_points[t_ind]} years, x={x[x_ind]} m')
     plt.colorbar(ax_im, label='dP, [Pa]')
     ax.set_xticks(y[0:-1:dy], labels=y[0:-1:dy])
     ax.set_xlabel('y, [m]')
@@ -172,8 +168,7 @@ if __name__ == "__main__":
     # second subplot
     ax = fig.add_subplot(122)
     ax_im = ax.pcolormesh(y, z, saturation_data[t_ind, x_ind, :, :].T, cmap=cmap)
-    ax.set_title('CO2 saturation at t={} years, x={} m'.format(
-        time_points[t_ind], x[x_ind]))
+    ax.set_title(f'CO2 saturation at t={time_points[t_ind]} years, x={x[x_ind]} m')
     plt.colorbar(ax_im, label='S, [-]')
     ax.set_xticks(y[0:-1:dy], labels=y[0:-1:dy])
     ax.set_xlabel('y, [m]')
