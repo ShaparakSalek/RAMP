@@ -572,7 +572,8 @@ if inputs['plot_results']:
             #else:
             #    plt.scatter(timeline, iPlan*np.ones(len(timeline)), s=30, c='gray', zorder=0)
             #    plt.plot(timeline, iPlan*np.ones(len(timeline)), lw=0.75, c='gray', zorder=0)
-        plt.savefig('timeline_%02i.png'%iStage, format='png')
+        filename = os.sep.join([inputs['directory_plots'], 'timeline_%02i.png'%iStage])
+        plt.savefig(filename, format='png')
         plt.close()
 
     for iStage in range(len(stages)):
@@ -622,7 +623,9 @@ if inputs['plot_results']:
         plt.ylabel('Number of Leaks', fontsize=14)
         plt.legend()
 
-        plt.savefig('detection_breakthrough_%02i.png'%iStage, format='png')
+        filename = os.sep.join([inputs['directory_plots'],
+                                'detection_breakthrough_%02i.png'%iStage])
+        plt.savefig(filename, format='png')
         plt.close()
 
     xx, yy, zz=np.meshgrid(vx, vy, vz, indexing='ij')
@@ -686,8 +689,9 @@ if inputs['plot_results']:
             ax.set_xlabel('Number of Leaks Detected', fontsize=14)
             ax.set_ylabel('Average Time to First Detection', fontsize=14)
 
-            plt.savefig('monitoringPlan_%02i_%05i.png'%(iStage, iPlan),
-                        format='png', bbox_inches='tight')
+            filename = os.sep.join([inputs['directory_plots'],
+                                    'monitoringPlan_%02i_%05i.png'%(iStage, iPlan)])
+            plt.savefig(filename, format='png', bbox_inches='tight')
             plt.close()
 
         fig = plt.figure(figsize=(12,8))
@@ -786,7 +790,8 @@ if inputs['plot_results']:
         plt.ylabel('Number of leaks detected', fontsize=14)
 
         filename = os.sep.join([
-            inputs['directory_plots'], 'wellbore_results_prelim_selected_%02i.png'%iStage])
+            inputs['directory_plots'],
+            'wellbore_results_prelim_selected_%02i.png'%iStage])
         plt.savefig(filename, format='png', bbox_inches='tight')
         plt.close()
 
@@ -843,8 +848,10 @@ if inputs['plot_results']:
             ax.set_xlabel('Number of Leaks Detected', fontsize=14)
             ax.set_ylabel('Average Time to First Detection', fontsize=14)
 
-            plt.savefig('monitoringPlan_selected_%02i_%05i.png'%(iStage, iPlan),
-                        format='png', bbox_inches='tight')
+            filename = os.sep.join([
+                inputs['directory_plots'],
+                'monitoringPlan_selected_%02i_%05i.png'%(iStage, iPlan)])
+            plt.savefig(filename, format='png', bbox_inches='tight')
             plt.close()
 
 if inputs['download_data']:
