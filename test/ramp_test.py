@@ -6,20 +6,22 @@ np.set_printoptions(threshold=sys.maxsize)
 
 try:
     from openiam import SystemModel
-    from ramp import (DataContainer, PlumeEstimate,
+    from ramp import (DataContainer, PlumeEstimate, BaseConfiguration,
                       SeismicSurveyConfiguration, SeismicDataContainer,
-                      SeismicMonitoring, SeismicEvaluation)
+                      SeismicMonitoring, SeismicEvaluation,
+                      InSituMeasurements, GravityMeasurements)
     from ramp.utilities.data_readers import default_bin_file_reader
 except ModuleNotFoundError:
     try:
         sys.path.append(os.sep.join(['..', 'src']))
         from openiam import SystemModel
-        from ramp import (DataContainer, PlumeEstimate,
+        from ramp import (DataContainer, PlumeEstimate, BaseConfiguration,
                           SeismicSurveyConfiguration, SeismicDataContainer,
-                          SeismicMonitoring, SeismicEvaluation)
+                          SeismicMonitoring, SeismicEvaluation,
+                          InSituMeasurements, GravityMeasurements)
         from ramp.utilities.data_readers import default_bin_file_reader
     except ImportError as err:
-        print('Unable to load RAMP class modules: {}'.format(err))
+        print(f'Unable to load RAMP class modules: {err}')
 
 CURRENT_WORK_DIR = os.getcwd()
 
@@ -42,9 +44,9 @@ def create_system_model_with_data_container(time_points, output_directory):
     family = 'velocity'
     data_setup = {}
     for ind in range(1, num_scenarios+1):
-        data_setup[ind] = {'folder': 'sim{:04}'.format(ind)}
+        data_setup[ind] = {'folder': f'sim{ind:04}'}
         for t_ind in range(1, num_time_points+1):
-            data_setup[ind]['t{}'.format(t_ind)] = 't{}.bin'.format(t_ind*10)
+            data_setup[ind][f't{t_ind}'] = f't{t_ind*10}.bin'
     baseline = True
 
     #  Create system model
@@ -62,7 +64,7 @@ def create_system_model_with_data_container(time_points, output_directory):
     dc.add_par('index', value=1, vary=False)
     # Add gridded observation
     dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
-    dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
+    dc.add_grid_obs(f'delta_{obs_name}', constr_type='matrix',
                     output_dir=output_directory)
 
     return sm, dc
@@ -86,9 +88,9 @@ def create_system_model_with_seismic_data_container(time_points, output_director
     family = 'seismic'
     data_setup = {}
     for ind in range(1, num_scenarios+1):
-        data_setup[ind] = {'folder': 'sim0001'.format(ind)} # repeat used scenarios
+        data_setup[ind] = {'folder': 'sim0001'} # repeat used scenarios
         for t_ind in range(1, num_time_points+1):
-            data_setup[ind]['t{}'.format(t_ind)] = 't{}.bin'.format(t_ind*10)
+            data_setup[ind][f't{t_ind}'] = f't{t_ind*10}.bin'
     baseline = True
 
     # Define coordinates of sources
@@ -124,7 +126,7 @@ def create_system_model_with_seismic_data_container(time_points, output_director
     dc.add_par('index', value=1, vary=False)
     # Add gridded observations
     dc.add_grid_obs(obs_name, constr_type='matrix', output_dir=output_directory)
-    dc.add_grid_obs('delta_{}'.format(obs_name), constr_type='matrix',
+    dc.add_grid_obs(f'delta_{obs_name}', constr_type='matrix',
                     output_dir=output_directory)
 
     return sm, dc, survey_config
@@ -148,7 +150,7 @@ class Tests(unittest.TestCase):
         return doc
 
     def test_data_container(self):
-        """Tests data container.
+        """Tests DataContainer component.
 
         Tests a data container component in a forward model against
         expected output for 3 different time points of data.
@@ -194,38 +196,158 @@ class Tests(unittest.TestCase):
         dv_data2 = dv_data[2][ind_to_check2]
 
         # Check data shape
-        self.assertTrue(vel_data.shape==true_data_shape,
-                        'Shape of returned data is {} but should be {}'.format(
-                            vel_data.shape, true_data_shape))
+        self.assertTrue(
+            vel_data.shape==true_data_shape,
+            f'Shape of returned data is {vel_data.shape} but should be {true_data_shape}')
 
-        self.assertTrue(dv_data.shape==true_data_shape,
-                        'Shape of returned data is {} but should be {}'.format(
-                            vel_data.shape, true_data_shape))
+        self.assertTrue(
+            dv_data.shape==true_data_shape,
+            f'Shape of returned data is {vel_data.shape} but should be {true_data_shape}')
 
         # Check sum of values for velocity and delta velocity
         for true_val, val, tp in zip(true_sum_vel, sum_vel, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         for true_val, val, tp in zip(true_sum_dv, sum_dv, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         # Check selected values
         for true_val, val in zip(true_dv_data1, dv_data1):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Data value at a selected location is {} but should be {}.'
-                            .format(str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Data value at a selected location is {val} but should be {true_val}.')
 
         for true_val, val in zip(true_dv_data2, dv_data2):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Data value at a selected location is {} but should be {}.'
-                            .format(str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Data value at a selected location is {val} but should be {true_val}.')
+
+    def test_gravity_measurements(self):
+        """Tests GravityMeasurements component linked to dynamic input.
+
+        Tests a gravity measurements component in a forward model against
+        expected output for 3 different time points of data.
+        """
+        pass
+
+    def test_in_situ_measurements(self):
+        """Tests InSituMeasurements component linked to dynamic input.
+
+        Tests an in situ measurements component in a forward model against
+        expected output for 3 different time points of data.
+        """
+        # System model arguments
+        time_points = np.array([5, 10, 20])
+        time_array = 365.25*time_points
+        sm_model_kwargs = {'time_array': time_array}   # time is given in days
+
+        output_directory = os.sep.join(['output', 'test_in_situ_measurements'])
+        if not os.path.exists(output_directory):
+            os.mkdir(output_directory)
+
+        # Create configuration for InSituMeasurements component
+        x = np.array([4550., 4650., 4750.])
+        y = np.array([2450., 2550., 2650.])
+        z = np.array([1104., 1152.5, 1201.])
+        nx = len(x)
+        ny = len(y)
+        nz = len(z)
+        num_p = nx*ny*nz
+
+        xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+        xyz_coords = np.zeros((num_p, 3))
+        xyz_coords[:, 0] = xx.reshape((num_p, ))
+        xyz_coords[:, 1] = yy.reshape((num_p, ))
+        xyz_coords[:, 2] = zz.reshape((num_p, ))
+
+        pressure_data_config = BaseConfiguration(
+            sources=None, receivers=xyz_coords, name='Pressure config')
+
+        # Create system model
+        sm = SystemModel(model_kwargs=sm_model_kwargs)
+
+        # Add insitu measurements component
+        dim_indices = (1, 1, 1)
+        meas = sm.add_component_model_object(
+            InSituMeasurements(name='meas', parent=sm, config=pressure_data_config,
+                               time_points=time_points, dim_indices=dim_indices,
+                               criteria=1))
+        delta_pressure_threshold = 35
+        meas.add_par('threshold', value=delta_pressure_threshold, vary=False)
+
+        # Setup dynamic pressure change data
+        dp_data = np.array(
+            # first time point
+            [[[[110., 110.,  60.], [ 30.,  30.,  20.], [ 10.,  20.,  10.]],
+              [[110.,  70.,  50.], [ 30.,  30.,  30.], [ 10.,  10.,  20.]],
+              [[100., 100., 100.], [ 40.,  40.,  30.], [ 20.,  10.,  20.]]],
+            # second time point
+             [[[ 40.,  40.,  40.], [ 40.,  40.,  30.], [ 30.,  40.,  20.]],
+              [[ 40.,  40.,  30.], [ 40.,  40.,  40.], [ 30.,  30.,  30.]],
+              [[ 40.,  40.,  30.], [ 50.,  50.,  40.], [ 30.,  30.,  30.]]],
+            # third time point
+             [[[ 40.,  30.,  30.], [ 40.,  30.,  20.], [ 20.,  30.,  10.]],
+              [[ 40.,  40.,  20.], [ 30.,  30.,  30.], [ 20.,  20.,  20.]],
+              [[ 30.,  30.,  30.], [ 40.,  30.,  20.], [ 30.,  20.,  20.]]]])
+
+        # Add data keyword argument linked to the numpy array
+        meas.add_dynamic_kwarg('data', dp_data)
+        # Add observations
+        for nm in ['leak_detected', 'detection_time']:
+            meas.add_obs(nm)        # covers the whole simulation period
+            meas.add_obs(nm + '_ts')  # covers how values change in time
+        meas.add_grid_obs('receiver_xyz', constr_type='matrix',
+                          output_dir=output_directory)
+        # Run system model
+        sm.forward()
+
+        # Get gridded and scalar observations
+        # Collect data point coordinate
+        coords = sm.collect_gridded_observations_as_time_series(
+            meas, 'receiver_xyz', output_directory, indices=[0], rlzn_number=0)[0]
+        true_coords = np.array([x[dim_indices[0]], y[dim_indices[1]], z[dim_indices[2]]])
+
+        # Export scalar observations
+        evaluations = {}
+        for nm in ['leak_detected', 'detection_time']:
+            evaluations[nm] = sm.collect_observations_as_time_series(meas, nm)
+            evaluations[nm + '_ts'] = sm.collect_observations_as_time_series(meas, nm + '_ts')
+
+        true_evaluations = {}
+        true_evaluations['leak_detected_ts'] = np.array([
+            int(dp_data[ind, dim_indices[0], dim_indices[1], dim_indices[2]]>=delta_pressure_threshold) \
+                for ind in range(len(time_points))])
+        true_evaluations['detection_time_ts'] = np.array([
+            time_array[ind] if true_evaluations['leak_detected_ts'][ind]==1 else np.inf \
+                for ind in range(len(time_points))])
+
+        # Compare receiver's coordinates
+        for true_val, val, coord_type in zip(true_coords, coords, ['x', 'y', 'z']):
+            self.assertTrue(
+                true_val-val == 0.0,
+                f'Receiver {coord_type}-coordinate is {val} but should be {true_val}.')
+
+        # Compare leak detected flags
+        for true_val, val, t in zip(true_evaluations['leak_detected_ts'],
+                                    evaluations['leak_detected_ts'],
+                                    time_points):
+            self.assertTrue(
+                true_val==val,
+                f'Leak detected flag at time t={t} years is {val} but should be {true_val}.')
+
+        # Compare detection time
+        for true_val, val in zip(true_evaluations['leak_detected_ts'],
+                                 evaluations['leak_detected_ts']):
+            self.assertTrue(
+                true_val==val,
+                f'Value of detection time output is {val} but should be {true_val}.')
 
     def test_plume_estimate(self):
-        """Tests plume estimate component linked to a data container.
+        """Tests PlumeEstimate component linked to a DataContainer.
 
         Tests a plume estimate component in a forward model against
         expected output for 3 different time points of data.
@@ -303,24 +425,25 @@ class Tests(unittest.TestCase):
 
         # Check sum of values for plume and plume_data observations
         for true_val, val, tp in zip(true_sum_plume, sum_plume, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         for true_val, val, tp in zip(true_sum_plume_data, sum_plume_data, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         # Check metrics of plumes
         for metric_nm, true_values in true_metrics.items():
             for true_val, val, tp in zip(true_values, plume_metrics[metric_nm], time_points):
-                self.assertTrue(true_val==val,
-                                'Value of {} at time t={} years is {} but should be {}.'
-                                .format(metric_nm, str(tp), str(val), str(true_val)))
+                self.assertTrue(
+                    true_val==val,
+                    f'Value of {metric_nm} at time t={tp} years is {val} but '+\
+                        f'should be {true_val}.')
 
     def test_seismic_data_container(self):
-        """Tests seismic data container as a standalone component.
+        """Tests SeismicDataContainer as a standalone component.
 
         Tests a seismic data container component in a forward model against
         expected output for 3 different time points of data.
@@ -370,39 +493,39 @@ class Tests(unittest.TestCase):
         dseismic_data2 = dseismic_data[2][ind_to_check2]
 
         # Check data shape
-        self.assertTrue(seismic_data.shape==true_data_shape,
-                        'Shape of returned data is {} but should be {}'.format(
-                            seismic_data.shape, true_data_shape))
+        self.assertTrue(
+            seismic_data.shape==true_data_shape,
+            f'Shape of returned data is {seismic_data.shape} but should be {true_data_shape}')
 
-        self.assertTrue(dseismic_data.shape==true_data_shape,
-                        'Shape of returned data is {} but should be {}'.format(
-                            dseismic_data.shape, true_data_shape))
+        self.assertTrue(
+            dseismic_data.shape==true_data_shape,
+            f'Shape of returned data is {dseismic_data.shape} but should be {true_data_shape}')
 
         # Check sum of values for seismic and delta seismic
         for true_val, val, tp in zip(true_sum_sd, sum_sd, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         for true_val, val, tp in zip(true_sum_dsd, sum_dsd, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         # Check selected values
         for true_val, val in zip(true_seismic_data1, seismic_data1):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Data value at a selected location is {} but should be {}.'
-                            .format(str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Data value at a selected location is {val} but should be {true_val}.')
 
         for true_val, val in zip(true_dseismic_data2, dseismic_data2):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Data value at a selected location is {} but should be {}.'
-                            .format(str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Data value at a selected location is {val} but should be {true_val}.')
 
 
     def test_seismic_monitoring(self):
-        """Tests seismic monitoring component linked to a seismic data container.
+        """Tests SeismicMonitoring component linked to a SeismicDataContainer.
 
         Tests a seismic monitoring component in a forward model against
         expected output for 3 different time points of data.
@@ -455,26 +578,27 @@ class Tests(unittest.TestCase):
             'min_NRMS': [0., 0.07454574, 0.03501776]}
 
         # Check data shape
-        self.assertTrue(nrms.shape==true_data_shape,
-                        'Shape of returned data is {} but should be {}'.format(
-                            nrms.shape, true_data_shape))
+        self.assertTrue(
+            nrms.shape==true_data_shape,
+            f'Shape of returned data is {nrms.shape} but should be {true_data_shape}')
 
         # Check sum of values for NRMS data
         for true_val, val, tp in zip(true_sum_nrms, sum_nrms, time_points):
-            self.assertTrue(abs(true_val-val) < 1.0e-6,
-                            'Sum of values at time t={} years is {} but should be {}.'
-                            .format(str(tp), str(val), str(true_val)))
+            self.assertTrue(
+                abs(true_val-val) < 1.0e-6,
+                f'Sum of values at time t={tp} years is {val} but should be {true_val}.')
 
         # Check NRMS metrics
         for metric_nm, true_values in true_metrics.items():
             for true_val, val, tp in zip(true_values, metrics[metric_nm], time_points):
-                self.assertTrue(abs(true_val-val) < 1.0e-4,
-                                'Value of {} at time t={} years is {} but should be {}.'
-                                .format(metric_nm, str(tp), str(val), str(true_val)))
+                self.assertTrue(
+                    abs(true_val-val) < 1.0e-4,
+                    f'Value of {metric_nm} at time t={tp} years is {val} '+\
+                        f'but should be {true_val}.')
 
     def test_seismic_evaluation(self):
-        """Tests seismic evaluation component linked to a seismic monitoring
-        component linked to a seismic data container.
+        """Tests SeismicEvaluation component linked to a SeismicMonitoring
+        component linked to a SeismicDataContainer.
 
         Tests a seismic evaluation component in a forward model against
         expected output for 3 different time points of data.
@@ -531,19 +655,21 @@ class Tests(unittest.TestCase):
         # Check leak detection metrics
         for nm in ['leak_detected', 'leak_detected_ts']:
             for true_val, val, tp in zip(true_metrics[nm], metrics[nm], time_points):
-                self.assertTrue(true_val==val,
-                                'Value of {} at time t={} years is {} but should be {}.'
-                                .format(nm, str(tp), str(val), str(true_val)))
+                self.assertTrue(
+                    true_val==val,
+                    f'Value of {nm} at time t={tp} years is {val} but should be {true_val}.')
         # Check detection times
         for nm in ['detection_time', 'detection_time_ts']:
             for true_val, val, tp in zip(true_metrics[nm], metrics[nm], time_points):
-                self.assertTrue(true_val==val,
-                                'Value of {} at time t={} years is {} days but should be {}.'
-                                .format(nm, str(tp), str(val), str(true_val)))
+                self.assertTrue(
+                    true_val==val,
+                    f'Value of {nm} at time t={tp} years is {val} days but should be {true_val}.')
 
 
 BASE_TESTS = [
     'test_data_container',
+    # 'test_gravity_measurements',
+    'test_in_situ_measurements',
     'test_plume_estimate',
     'test_seismic_data_container',
     'test_seismic_monitoring',

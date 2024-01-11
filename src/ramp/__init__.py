@@ -1,7 +1,9 @@
 import os
 
+from .configuration.configuration import BaseConfiguration
 from .components.base import (RAMPSystemModel, DataContainer,
-                              MonitoringTechnology, InSituMeasurements)
+                              MonitoringTechnology, InSituMeasurements,
+                              GravityMeasurements)
 from .components.seismic import (SeismicSurveyConfiguration,
                                  SeismicDataContainer, SeismicMonitoring,
                                  SeismicEvaluation)
@@ -18,6 +20,8 @@ __all__ = ['RAMP_DIR',
            'DataContainer',
            'MonitoringTechnology',
            'InSituMeasurements',
+           'GravityMeasurements',
+           'BaseConfiguration',
            'SeismicSurveyConfiguration',
            'SeismicDataContainer',
            'SeismicMonitoring',
