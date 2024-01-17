@@ -78,7 +78,11 @@ plan by determining ideal locations and timings for seismic surveys.
    :align: center
    :alt: EDX Key
 
-4. Navigate to the working directory *RAMP/examples/scripts*.
+4. Navigate to the working directory *RAMP/examples/scripts*. If using a Linux terminal,
+this will involve the commands "cd" and "ls" to navigate directories. If using a Windows
+cmd terminal, this will instead involve "cd" and "dir". If using a Python Integrated
+Development Environment (IDE) such as Spyder or PyCharm, use the appropriate menu interface
+to define the current working directory.
 
 5. Edit the *inputs.json* or *inputs.yaml* file in order to modify
    various variables controlling the way the optimization script runs.
@@ -108,7 +112,16 @@ plan by determining ideal locations and timings for seismic surveys.
     e.	Define the directories where you'd like the various leakage scenarios,
         intermediate NRMS files and output files stored using the parameters
         “directory_seismic_data”, “directory_velocity_data”,
-        “directory_nrms_data” and “directory_plots”
+        “directory_nrms_data” and “directory_plots”. For these parameters, you can 
+        specify relative paths, for example by simply using a period . to indicate
+        the current working directory, or ../ to indicate the directory above the
+        current directory, or ./outputs to indicate a directory called outputs
+        within the current directory. If running from a terminal, the current directory
+        is the directory where you defined or navigated to in Step 4.
+
+        You can also specify absolute paths, which in Linux will require a format 
+        similar to /home/your_username/Documents/ramp-test, but in Windows will
+        require a format similar to C:\\Users\\your_username\\Documents\\ramp-test
 
     f.	Define the list of potential source locations you'd like to consider
         in the optimization. You can specify an irregular list of values
