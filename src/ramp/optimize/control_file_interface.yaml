@@ -1,0 +1,119 @@
+Model:
+  StartTime: null
+  EndTime: null
+  TimeStep: null
+  TimePoints: null
+  OutputDirectory: null
+  Logging: '# for future'
+Approach:
+  Type: Optimization
+  Setup: '# name of key below containing applicable setup entries; applicable for
+    Optimization and SensitivityAnalysis approaches;'
+EvaluationSetup1:
+  Analysis: 'Forward (or LHS) # for evaluation'
+  Components: '[MonitoringTechnology1, MonitoringTechnology2,...] # not needed for
+    sensitivity analysis'
+MonitoringTechnology1:
+  Type: Seismic (or Base)
+  InputData: null
+  Name: '# data name if applicable'
+  FileDirectory: '# Folder where setup file is located'
+  SetupFilename: '# name of file with setup data'
+  TimePoints: '# at which the data files are available'
+  DataConfiguration: '# associated with data'
+  Sources: null
+  xyz: '# e.g., file or list'
+  x: null
+  y: null
+  z: null
+  Receivers: null
+  TotalDuration: null
+  SamplingInterval: null
+  SampleTimePoints: null
+  Parameters: null
+  index: '# standard setup of parameters, like in OpenIAM'
+  Outputs: '[DetectionTime, LeakDetected, ProbLeakDetected]  # for multiple scenarios
+    it can be probability of leak detected'
+  TechnologyConfiguration: '# for seismic, for evaluation'
+  Selected: '# path to the file with arrays configurations; for optimization; can
+    be of the form'
+  source_loc1: '[]  # list contain coordinates of receivers'
+  source_loc2: '[]'
+MonitoringTechnology2:
+  Type: Base
+  InputData: null
+  FileDirectory: '# Folder where setup file is located'
+  SetupFilename: '# name of file with setup data'
+  TimePoints: '# at which the data files are available'
+  Name: '# might be needed in the future for other components'
+  DataConfiguration: '# associated with data'
+  Sources: 'None # default, if not used'
+  Receivers: null
+  xyz: '# e.g., file or list'
+  x: null
+  y: null
+  z: null
+  TechnologyConfiguration: None; use the whole data set; not good idea for InSitu
+
+GravityMonitoringOptimization:
+  Type: Gravity
+  incomplete_simulations:  ['0008', '0037', '0092', '0118', '0120', '0127', 
+'0136', '0150', '0182', '0197', '0211', '0245', '0397', '0449', '0518', 
+'0590', '0598', '0686', '0749', '0863', '0935', '0937', '0970']
+  nSimulations: 1000  # nRealizations
+  years: [5, 10, 20, 30, 40, 50, 60, 80, 100, 120, 150, 200]  # time steps
+  rootdir: '/Users/tian7/data/NRAP/bff414dd-db60-48df-8e45-5d9ee55fff53/'  # input data: P, co2_sat, tds, gravity
+  # npy numpy array shape
+  nx: 40
+  ny: 20
+  nz: 32
+
+  # subregion boundary
+  xmin: 4000
+  xmax: 8000
+  ymin: 1500
+  ymax: 3500
+  zmin: 0
+  zmax: 1410.80
+  z: [2.5, 7.5, 34.4, 83.1, 131.9, 180.6, 229.4, 278.1, 326.9, 
+              375.6, 424.4, 473.1, 521.9, 570.5, 619.0, 667.5, 716.0, 
+              764.5, 813.0, 861.5, 910.0, 958.5, 1007.0, 1055.5, 1104.0, 
+              1152.5, 1201.0, 1248.5, 1295.0, 1341.5, 1376.3, 1399.6]
+  # gravity measurement stations on the ground surface
+  ngx: 41
+  ngy: 21  
+  outdir: './output'
+  ths: [3,5,7,10,15,20]
+
+OptimizationSetup1:
+  Components: '[MonitoringTechnology1, MonitoringTechnology2,...]'
+  Method: '# if applicable: "Search", "Stage", "MultiTech", "MultiObj"'
+  Stages: '2 # number of stages'
+  Domain: 'All (or Selected) # if Selected than the key should be present in the corresponding
+    setup of all components'
+  Parameters: null
+  nrms_threshold: null
+  Objective: TTD (or Cost, or Risk)
+SensitivityAnalysis1:
+  Parameters: null
+  Thresholds: '# Threshold values for sensitivity'
+  ks: null
+  kr: null
+  wavefield: '''P'' or ''S'', or both'
+  vpvs: '[''Vp'', ''Vs''] # velocity_type'
+  InputData: null
+  Type: Seismic (or Base)
+  Name: '# data name if applicable'
+  FileDirectory: '# Folder where setup file is located'
+  SetupFilename: '# name of file with setup data'
+  TimePoints: '# at which the data files are available; and needed to be used'
+  DataConfiguration: '# associated with data'
+  Sources: null
+  xyz: '# e.g., file or list'
+  x: null
+  y: null
+  z: null
+  Receivers: null
+  TotalDuration: null
+  SamplingInterval: null
+  SampleTimePoints: null
