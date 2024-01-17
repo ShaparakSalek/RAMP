@@ -9,6 +9,7 @@ import yaml
 from obspy.io.segy.core import _read_segy
 import numpy as np
 import requests
+import glob
 
 def read_yaml_parameters(file_path):
     """
@@ -94,3 +95,22 @@ def download_data_from_edx(workspace_id,folder_id,api_key,outdir):
         r = requests.get(file_url, headers=headers)
         with open(outdir + file_name, 'wb') as file:
             file.write(r.content)
+
+
+def get_all_h5_filenames(rootdir):
+    h5_dirs=glob.glob(rootdir+'sim*')
+    h5_dirs=sorted(h5_dirs)
+    for i,h5dir in enumerate(h5_dirs):
+        h5files = glob.glob(h5dir + '/*.h5')
+        h5files=sorted(h5files)
+        if i==0:
+            all_gra_sims_fn=h5files
+        else:
+            all_gra_sims_fn=all_gra_sims_fn+h5files
+    return all_gra_sims_fn
+
+
+def read_yaml(file_path):
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    return data
