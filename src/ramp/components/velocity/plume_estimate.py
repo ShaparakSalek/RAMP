@@ -143,6 +143,9 @@ class PlumeEstimate(MonitoringTechnology):
         ----------
         p : dict
             Parameters of component
+        time_point : float
+            time point (in days) for which the component outputs
+            are to be calculated; by default, its value is 0 days
         data : numpy.ndarray of shape (n1, n2) or (n1, n2, n3)
             Data to be processed.
         baseline : numpy.ndarray of shape (n1, n2) or (n1, n2, n3)
@@ -329,7 +332,7 @@ def plume_scatter_4x5_plot(xxs, zzs, data, xlabel, ylabel, title, colorbar_label
     return fig, axs
 
 
-def test_plume_estimate_from_velocity():
+def test_plume_estimate():
     # Define keyword arguments of the system model
     final_year = 200
     num_intervals = (final_year-10)//10
@@ -533,4 +536,4 @@ def test_plume_estimate_from_velocity():
 
 if __name__ == "__main__":
 
-    test_plume_estimate_from_velocity()
+    test_plume_estimate()

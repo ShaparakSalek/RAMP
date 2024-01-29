@@ -29,7 +29,8 @@ class SeismicMonitoring(MonitoringTechnology):
         Parameters
         ----------
         name : str
-            Name of SeismicMonitoring instance under which it will be known to its parent
+            Name of SeismicMonitoring class instance under which it will
+            be known to its parent
         parent : SystemModel class instance
             System model to which the instance belongs
         survey_config : SeismicSurveyConfiguration class instance
@@ -76,8 +77,13 @@ class SeismicMonitoring(MonitoringTechnology):
         self.source_ind = list(range(self.num_sources))
         self.receiver_ind = list(range(self.num_receivers))
         self.sub_configuration = self.configuration
+
         if source_ind is not None or receiver_ind is not None:
             self.update_indices(source_ind=source_ind, receiver_ind=receiver_ind)
+
+        self.coordinates = {
+            'source_xyz': self.sub_configuration.sources.coordinates,
+            'receiver_xyz': self.sub_configuration.receivers.coordinates}
 
         # Process time_points argument
         self.time_points = process_time_points(
@@ -95,10 +101,10 @@ class SeismicMonitoring(MonitoringTechnology):
 
         Parameters
         ----------
-        source_ind : TYPE, optional
-            DESCRIPTION. The default is None.
-        receiver_ind : TYPE, optional
-            DESCRIPTION. The default is None.
+        source_ind : list
+            Indices of sources to be used, indices are between 0 and ns.
+        receiver_ind : list
+            Indices of receivers to be used, indices are between 0 and nr.
 
         Returns
         -------
@@ -126,11 +132,23 @@ class SeismicMonitoring(MonitoringTechnology):
         ----------
         p : dict
             Parameters of component
+        time_point : float
+            time point (in days) for which the component outputs
+            are to be calculated; by default, its value is 0 days
         data : numpy.ndarray of shape (ns, nr, nt)
             Seismic data to be processed: ns - number of sources, nr - number of
             receivers, nt - number of time sample intervals.
         baseline : numpy.ndarray of shape (ns, nr, nt)
             Baseline data to be processed
+        source_ind : list
+            Indices of sources to be used, indices are between 0 and ns.
+        receiver_ind : list
+            Indices of receivers to be used, indices are between 0 and nr.
+        first_time_ind : int
+            Index (between 0 and nt-1) of the first data points in each trace
+            from which the calculations of NRMS will be performed
+        num_time_samples : int
+            Number of data points to use from each trace to calculate NRMS values
 
         Returns
         -------
@@ -140,6 +158,9 @@ class SeismicMonitoring(MonitoringTechnology):
         """
         if source_ind is not None or receiver_ind is not None:
             self.update_indices(source_ind=source_ind, receiver_ind=receiver_ind)
+            self.coordinates = {
+                'source_xyz': self.sub_configuration.sources.coordinates,
+                'receiver_xyz': self.sub_configuration.receivers.coordinates}
 
         if num_time_samples is None:
             num_time_samples = data.shape[2]-first_time_ind
@@ -153,8 +174,15 @@ class SeismicMonitoring(MonitoringTechnology):
         max_nrms = np.max(nrms)
         min_nrms = np.min(nrms)
 
-        out = {'NRMS': nrms, 'ave_NRMS': ave_nrms,
-               'max_NRMS': max_nrms, 'min_NRMS': min_nrms}
+        data_out = {'NRMS': nrms, 'ave_NRMS': ave_nrms,
+                    'max_NRMS': max_nrms, 'min_NRMS': min_nrms}
+
+        time_index = np.where(self.time_points==time_point/365.25)[0][0]
+        if time_index == 0:
+            out = {**data_out, **self.coordinates}
+            return out
+        else:
+            return data_out
 
         return out
 
@@ -196,7 +224,7 @@ def calculate_nrms(data, baseline, source_ind, receiver_ind, time_ind):
 
     return nrms
 
-def test_scenario_seismic():
+def test_seismic_monitoring():
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10
@@ -347,4 +375,4 @@ def test_scenario_seismic():
 
 if __name__ == "__main__":
 
-    test_scenario_seismic()
+    test_seismic_monitoring()

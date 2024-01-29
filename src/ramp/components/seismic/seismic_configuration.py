@@ -13,137 +13,10 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))))
-from ramp.components.seismic.point import Point
-from ramp.components.seismic.point_set import PointSet
+from ramp.configuration.configuration import POINTS_CLASS, BaseConfiguration
 
 
-class Source(Point):
-    def __init__(self, x=0, y=0, z=0, index=1, name='', seismic_survey=None):
-        """
-        Constructor of Source class object.
-
-        Parameters
-        ----------
-        x : int or float, optional
-            x-coordinate of a new source. The default is 0.
-        y : int or float, optional
-            y-coordinate of a new source. The default is 0.
-        z : int or float, optional
-            z-coordinate of a new source. The default is 0.
-        name : string, optional
-            Name of the newly created source. the default is ''.
-        seismic_survey : SeismicSurvey instance, optional
-            Seimic survey to which the source belongs
-
-        Returns
-        -------
-        Instance of Source class
-        """
-        if name == '':
-            name = str(index)
-        super().__init__(x=x, y=y, z=z, index=index, name=name)
-        self.index = index
-        self.seismic_survey = seismic_survey
-
-    def copy(self, name=''):
-        """
-        Create a new Source with the same coordinates (but possibly different name).
-
-        Parameters
-        ----------
-        name : string, optional
-            Name of the newly created point. The default is ''.
-
-        Returns
-        -------
-        Instance of Source class
-
-        """
-        return Source(self.x, self.y, self.z, name=name)
-
-    def __repr__(self):
-        """
-        Return string representation of a source point.
-
-        Returns
-        -------
-        String representation of a source point.
-
-        """
-        if self.name:
-            str_repr = 'Source {} at (x, y, z) = ({}, {}, {})'.format(
-                self.name, self.x, self.y, self.z)
-        else:
-            str_repr = 'Source at (x, y, z) = ({}, {}, {})'.format(
-                self.x, self.y, self.z)
-
-        return str_repr
-
-
-class Receiver(Point):
-    def __init__(self, x=0, y=0, z=0, index=1, name='', seismic_survey=None):
-        """
-        Constructor of Receiver class object.
-
-        Parameters
-        ----------
-        x : int or float, optional
-            x-coordinate of a new receiver. The default is 0.
-        y : int or float, optional
-            y-coordinate of a new receiver. The default is 0.
-        z : int or float, optional
-            z-coordinate of a new receiver. The default is 0.
-        name : string, optional
-            Name of the newly created receiver. the default is ''.
-        seismic_survey : SeismicSurvey instance, optional
-            Seimic survey to which the source belongs
-
-        Returns
-        -------
-        Instance of Receiver class
-        """
-        if name == '':
-            name = str(index)
-        super().__init__(x=x, y=y, z=z, index=index, name=name)
-        self.index = index
-        self.seismic_survey = seismic_survey
-
-    def copy(self, name=''):
-        """
-        Create a new Receiver with the same coordinates (but possibly different name).
-
-        Parameters
-        ----------
-        name : string, optional
-            Name of the newly created point. The default is ''.
-
-        Returns
-        -------
-        Instance of Receiver class
-
-        """
-        return Receiver(self.x, self.y, self.z, name=name)
-
-    def __repr__(self):
-        """
-        Return string representation of receiver.
-
-        Returns
-        -------
-        String representation of the receiver.
-
-        """
-        if self.name:
-            str_repr = 'Receiver {} at (x, y, z) = ({}, {}, {})'.format(
-                self.name, self.x, self.y, self.z)
-        else:
-            str_repr = 'Receiver at (x, y, z) = ({}, {}, {})'.format(
-                self.x, self.y, self.z)
-
-        return str_repr
-
-
-class SeismicSurveyConfiguration():
+class SeismicSurveyConfiguration(BaseConfiguration):
     def __init__(self, sources, receivers, name='Unnamed', create_arrays=False,
                  array_creator=None, array_creator_kwargs=None):
         """
@@ -162,23 +35,8 @@ class SeismicSurveyConfiguration():
         Instance of SeismicSurveyConfiguration class containing information
         about the survey's sources and receivers
         """
-        if sources is not None and receivers is not None:
-            self.num_sources = sources.shape[0]
-            self.num_receivers = receivers.shape[0]
-
-            # Create set of sources
-            self._sources = self.create_point_set('sources', sources, self, Source)
-
-            # Create set of receivers
-            self._receivers = self.create_point_set('receivers', receivers, self, Receiver)
-            self.name = name
-        else:
-            # Create empty SeismicSurvey
-            self._sources = []
-            self.num_sources = 0
-            self._receivers = []
-            self.num_receivers = 0
-            self.name = name
+        super().__init__(sources=sources, receivers=receivers, name=name,
+                         sc_name='source', rc_name='receiver')
 
         if create_arrays:
             self.array_creator = array_creator
@@ -205,43 +63,6 @@ class SeismicSurveyConfiguration():
             print("Error: Expected dictionary for new_arrays.")
             return
 
-    @property
-    def sources(self):
-        return self._sources
-
-    @sources.setter
-    def sources(self, new_sources):
-        if type(new_sources) is np.ndarray:  # numpy.array with coordinates
-            self._sources = self.create_point_set('sources', new_sources,
-                                                  self, Source)
-            self.num_sources = len(new_sources)
-        elif hasattr(new_sources, 'points'):  # set of sources
-            self._sources = new_sources
-            self.num_sources = len(new_sources.points)
-
-    @property
-    def receivers(self):
-        return self._receivers
-
-    @receivers.setter
-    def receivers(self, new_receivers):
-        if type(new_receivers) is np.ndarray:  # numpy.array with coordinates
-            self._receivers = self.create_point_set('receivers', new_receivers,
-                                                    self, Receiver)
-            self.num_receivers = len(new_receivers)
-        elif hasattr(new_receivers, 'points'):  # set of receivers
-            self._receivers = new_receivers
-            self.num_receivers = len(new_receivers.points)
-
-    @staticmethod
-    def create_point_set(name, point_coords, survey_obj, point_class):
-        point_set = PointSet(name, point_coords, point_class=point_class)
-
-        for point in point_set.elements:
-            point.seismic_survey = survey_obj
-
-        return point_set
-
     def create_arrays(self, array_creator, **array_creator_kwargs):
         """
         Create set of arrays according to the predetermined setup.
@@ -260,60 +81,6 @@ class SeismicSurveyConfiguration():
 
         """
         self.num_arrays, self._arrays = array_creator(**array_creator_kwargs)
-
-    def plot_configuration(self):
-        """
-        Visualize location of sources and receivers.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.sources.elements and self.receivers.elements:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            # Plot the first source
-            ax.scatter(self._sources.elements[0].x,
-                       self._sources.elements[0].y,
-                       self._sources.elements[0].z,
-                       marker='o', c='red', label='sources')
-
-            # Plot the rest of the sources
-            for ind in range(1, self.num_sources):
-                ax.scatter(self._sources.elements[ind].x,
-                           self._sources.elements[ind].y,
-                           self._sources.elements[ind].z,
-                           marker='o', c='red')
-
-            # Plot the first receiver
-            ax.scatter(self._receivers.elements[0].x,
-                       self._receivers.elements[0].y,
-                       self._receivers.elements[0].z,
-                       marker='s', c='blue', label='receivers')
-
-            # Plot the rest of the receivers
-            for ind in range(1, self.num_receivers):
-                ax.scatter(self._receivers.elements[ind].x,
-                           self._receivers.elements[ind].y,
-                           self._receivers.elements[ind].z,
-                           marker='s', c='blue')
-
-            ax.set_xlabel('x, [m]')
-            ax.set_ylabel('y, [m]')
-            ax.set_zlabel('z, [m]')
-            ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0))
-
-            fig.suptitle('Distribution of sources and receivers for {}'.format(self.name))
-
-            plt.show()
-        else:
-            warn_msg = ''.join(['Method plot_configuration cannot produce ',
-                                'figure of configuration for a seismic ',
-                                'survey "{}" since either sources or receivers ',
-                                '(or both) are not defined.']).format(self.name)
-            logging.warning(warn_msg)
-
 
     def create_survey_configuration(self, name, source_indices, receiver_indices):
         """
@@ -339,14 +106,17 @@ class SeismicSurveyConfiguration():
         # Get sources coordinates
         source_coords = self._sources.coordinates[source_indices, :]
         new_configuration._sources = self.create_point_set(
-            'sources', source_coords, new_configuration, Source)
+            'sources', source_coords, new_configuration,
+            POINTS_CLASS[self.source_class])
 
         # Get receivers coordinates
         receiver_coords = self._receivers.coordinates[receiver_indices, :]
         new_configuration._receivers = self.create_point_set(
-            'receivers', receiver_coords, new_configuration, Receiver)
+            'receivers', receiver_coords, new_configuration,
+            POINTS_CLASS[self.receiver_class])
 
         return new_configuration
+
 
 def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
                              first_receiver_index=0):
@@ -398,6 +168,7 @@ def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
         logging.warn(warn_msg)
 
     return num_arrays, produced_arrays
+
 
 def five_n_receivers_array_creator(source_coords=None, receiver_coords=None):
     """
@@ -636,7 +407,7 @@ def test_array_creator():
 
 if __name__ == "__main__":
 
-    test_case = 4
+    test_case = 1
     available_tests = {1: test_seismic_configuration1,
                        2: test_seismic_configuration2,
                        3: test_seismic_configuration3,

@@ -237,7 +237,8 @@ class DataInterpolator():
 
         return out
 
-if __name__ == "__main__":
+
+def test_data_interpolator():
     # Define logging level
     logging.basicConfig(level=logging.WARNING)
 

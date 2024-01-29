@@ -8,16 +8,17 @@ LRST (Battelle) supporting NETL
 from math import sqrt
 import numpy as np
 
+
 class Point():
     """
-    Class is designed to be flexible with respect of number of dimensions.
+    Class is designed to be flexible with respect to the number of dimensions.
     Points can be defined as 1d, 2d, and 3d.
     Any axis (x, y, z) can be chosen as primary for 1d point. In this case,
     the rest of the coordinates would assume 0 values, by default.
     For 2d points any two axes can be chosen as primary. The remaining coordinate
     would assume 0 value, by default.
     """
-    def __init__(self, x=0, y=0, z=0, index=0, name=''):
+    def __init__(self, x=0, y=0, z=0, name=''):
         """
         Constructor of Point class object.
 
@@ -29,8 +30,6 @@ class Point():
             y-coordinate of a new point. The default is 0.
         z : int or float, optional
             z-coordinate of a new point. The default is 0.
-        index : int, optional
-            If point is assigned to a grid index can be used to find a point.
         name : string, optional
             Name of the newly created point. the default is ''.
 
@@ -42,6 +41,10 @@ class Point():
         self.y = y
         self.z = z
         self.name = name
+
+        # Additional attributes
+        self.index = None
+        self.config = None
 
     def __repr__(self):
         """

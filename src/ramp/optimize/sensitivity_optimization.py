@@ -9,7 +9,7 @@ Contributors:
 Xianjin Yang, LLNL
 Lianjie Huang, LANL
 Erika Gasperikova, LBL
-Veronika Vasylkivska
+Veronika Vasylkivska, NETL
 Yuan Tian, LLNL
 """
 import os, sys, glob
@@ -43,11 +43,11 @@ def create_cmap():
 def calculate_slopes(x, y):
     """
     Calculate the slopes at each point of the given x array.
-    
+
     Parameters:
     x (array-like): The array representing the x-axis values.
     y (array-like): The array representing the y-axis values corresponding to x.
-    
+
     Returns:
     numpy.ndarray: An array of slopes at each point of x.
     """
@@ -55,7 +55,7 @@ def calculate_slopes(x, y):
     slopes[0] = (y[1] - y[0]) / (x[1] - x[0])  # forward difference for the first point
     slopes[-1] = (y[-1] - y[-2]) / (x[-1] - x[-2])  # backward difference for the last point
     slopes[1:-1] = (y[2:] - y[:-2]) / (x[2:] - x[:-2])  # central difference for the rest
-    
+
     return slopes
 
 
@@ -64,7 +64,7 @@ class MonitoringDesignSensitivity2D:
     '''
     sensitivity-based 2D seismic monitoring design
     '''
-    def __init__(self,yaml_path):
+    def __init__(self, yaml_path):
         """
         Initializes seismic parameters from a YAML file.
 
@@ -72,7 +72,6 @@ class MonitoringDesignSensitivity2D:
             yaml_path (str): Path to the input YAML file.
 
         """
-
         parameters = read_yaml_parameters(yaml_path)
         # read in parameters from YAML file
         self.nx = parameters['nx']
@@ -143,7 +142,6 @@ class MonitoringDesignSensitivity2D:
             an array of sensitivity data
 
         '''
-
         p = os.path.normpath(path) + '/'
         data = np.fromfile(p+fname, dtype=np.float32, count=-1, sep='')
         return data
@@ -174,14 +172,14 @@ class MonitoringDesignSensitivity2D:
         sens = np.zeros((self.nsrc, self.nrec))
         for i in range(1, self.nsrc+1):
             fname = f'receiver_sensitivity_{wf}_wrt_{vpvs}_src_{i:d}.bin'
-            sens[i-1,:] = self.read_sensitivity_file(sDir, fname.lower())
+            sens[i-1, :] = self.read_sensitivity_file(sDir, fname.lower())
         if self.sen_nor:
             maxSens = np.max(sens)
             minSens = np.min(sens)
             dsens = maxSens - minSens
             sens = (sens - minSens) / dsens
         return sens
-    
+
 
 
     # -------------------------------
@@ -230,20 +228,25 @@ class MonitoringDesignSensitivity2D:
             fig, ax = plt.subplots(figsize=(12, 5))
 
             if param.lower() == 'mask':  # mask
-                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap=cmap)
+                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0],
+                                cmap=cmap)
                 s = tokens[0][:-8]
                 ss = s[-3:]
-                if ss[0] == 'y': ss = ss[1:]
+                if ss[0] == 'y':
+                    ss = ss[1:]
                 yr = str(int(ss) - self.t1)
                 annotate = 'CO$_2$ plume mask at t1+' + yr + ' years'
                 label = 'CO$_2$ Plume Mask'
                 # Add text using relative positioning
                 relative_x_position = 0.03  # 3% from the left edge
                 relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
-                ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
+                ax.text(relative_x_position, relative_y_position, annotate,
+                        transform=ax.transAxes, color='black', fontsize=24)
             else:
-                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0], cmap='jet')
-                if len(param)==3: param='density'
+                img = ax.imshow(model.T, extent=[0, self.nx * self.dx, self.nz * self.dz, 0],
+                                cmap='jet')
+                if len(param) == 3:
+                    param='density'
                 annotate = param.title()
                 label = annotate + self.units[param]
                 fig.colorbar(img, label=label, orientation='horizontal',
@@ -251,7 +254,8 @@ class MonitoringDesignSensitivity2D:
                 # Add text using relative positioning
                 relative_x_position = 0.03  # 3% from the left edge
                 relative_y_position = 0.85  # 15% from the top edge (or 85% from the bottom)
-                ax.text(relative_x_position, relative_y_position, annotate, transform=ax.transAxes, color='black', fontsize=24)
+                ax.text(relative_x_position, relative_y_position, annotate,
+                        transform=ax.transAxes, color='black', fontsize=24)
 
             ax.set_xlabel('Horizontal Distance (m)')
             ax.set_ylabel('Depth (m)')
@@ -259,7 +263,8 @@ class MonitoringDesignSensitivity2D:
             plt.tight_layout()
             s = os.path.splitext(basename)[0]
             plt.savefig(self.plume_images_dir + s + '.png', bbox_inches='tight')
-            if DEBUG: plt.show()
+            if DEBUG:
+                plt.show()
             plt.cla()
             plt.clf()
             plt.close()
@@ -301,10 +306,10 @@ class MonitoringDesignSensitivity2D:
         contour_color_list=['m','brown','b','k','g']
         cmap = create_cmap()
         extent = [0, (self.nrec-1)*self.drec, (self.nsrc-1)*self.dsrc, 0]
-        if self.sen_nor==1:
-            img = ax.imshow(sens,extent=extent,vmin=0.0,vmax=1.0,cmap=cmap)
+        if self.sen_nor == 1:
+            img = ax.imshow(sens, extent=extent, vmin=0.0, vmax=1.0, cmap=cmap)
         else:
-            img = ax.imshow(sens,vmin=0.0,vmax=np.max(sens),extent=extent,cmap=cmap)
+            img = ax.imshow(sens, vmin=0.0, vmax=np.max(sens), extent=extent, cmap=cmap)
 
         yrs = 't1+' + str(int(yr)-self.t1) + ' years'
         # Add text using relative positioning
@@ -346,7 +351,7 @@ class MonitoringDesignSensitivity2D:
         plt.cla()
         plt.clf()
         plt.close()
-    
+
     def find_optimal_seismic_arrays(self,sens,threshold):
         '''
         Find optimal sources and receivers with scaled sensitivity
@@ -365,15 +370,15 @@ class MonitoringDesignSensitivity2D:
             an array of sensitivity masks showing optimal source and receiver locations
 
         '''
-        if self.sen_nor==1:
+        if self.sen_nor == 1:
             out = sens >= threshold
         else:
             maxSens = np.max(sens)
             minSens = np.min(sens)
             dsens = maxSens - minSens
             out = sens >= (threshold*dsens  + minSens)
-        
-        sens_sel=sens*out
+
+        sens_sel = sens*out
         # increase source interval by a factor of ks and receiver interval by kr
         out = out[::self.opt_src_sep, ::self.opt_rec_sep]
         sens_sel = sens_sel[::self.opt_src_sep, ::self.opt_rec_sep]
@@ -381,10 +386,10 @@ class MonitoringDesignSensitivity2D:
         m, n = out.shape
         opt = np.sum(out)
         area = 100 * opt / (m * n)
-        
-        return out, area,np.sum(sens_sel)
 
-    def find_max_num_sources(self,src_rec):
+        return out, area, np.sum(sens_sel)
+
+    def find_max_num_sources(self, src_rec):
         ''' find maximum number of sources for all time steps
         Assume more sources are needed at later time
 
@@ -402,13 +407,14 @@ class MonitoringDesignSensitivity2D:
         ns, nr = src_rec.shape
         ns_max = 0
         for i in range(ns):
-            s = np.int32(src_rec[i,:])
-            if np.sum(s) <= 0: continue
+            s = np.int32(src_rec[i, :])
+            if np.sum(s) <= 0:
+                continue
             ns_max += 1
         return ns_max
 
 
-    def plot_optimal_design(self,src_rec,modeldir,outdir,wf,ps,yr,ns_max):
+    def plot_optimal_design(self, src_rec, modeldir, outdir, wf, ps, yr, ns_max):
         '''
         Plot and save optimal design with source, receivers and plume per time step
         and per sensitivity component
@@ -531,15 +537,15 @@ class MonitoringDesignSensitivity2D:
         sen_all=[]
         #th_all=np.exp(-0.1*np.arange(200))
         for th in self.th_all:
-            design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
+            design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d, th)
             arae_all.append(area)
             sen_all.append(sen_sel)
         arae_all=np.array(arae_all)
         sen_all=np.array(sen_all)
         # given one dtc, find the design and th
-        th=np.interp(self.target_dtc,arae_all,self.th_all)
+        th=np.interp(self.target_dtc, arae_all, self.th_all)
         #print(th)
-        design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d,th)
+        design, area,sen_sel = self.find_optimal_seismic_arrays(sens2d, th)
         return design
     
     def load_sens_data(self,wf,ps,yr):
@@ -689,7 +695,7 @@ class MonitoringDesignSensitivity2D:
                         self.plot_sensitivity_image(sens2d, out_dir,yr,wf,ps, self.area_th_all_years[k,j,:,2])
                     if self.output_yaml==1:
                         fname = optimal_dir + wf + '_' + ps + '_' + yr + '.yaml'
-                        write_optimal_design_to_yaml(design2,fname)
+                        write_optimal_design_to_yaml(design2, fname)
                     else:
                         fname = optimal_dir + wf + '_' + ps + '_' + yr + '.txt'
                         with open(fname, 'w') as fout:
@@ -821,7 +827,8 @@ class MonitoringDesignSensitivity2D:
 if __name__ == "__main__":
     # Command-line argument parsing to get the YAML configuration file
     parser = argparse.ArgumentParser(description='Seismic Design Optimization Script')
-    parser.add_argument('--config', type=str, default='seis_sens_opt_params.yaml', help='Path to the configuration YAML file.')
+    parser.add_argument('--config', type=str, default='seis_sens_opt_params.yaml',
+                        help='Path to the configuration YAML file.')
     args = parser.parse_args()
     yaml_path = args.config
     # create a sensitivity object

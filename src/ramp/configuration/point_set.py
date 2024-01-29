@@ -14,7 +14,8 @@ import logging
 import numpy as np
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))))
-from ramp.components.seismic.point import Point
+from ramp.configuration.point import Point
+
 
 class PointSet():
     def __init__(self, name, xyz_coords=None, regular=False, point_class=Point,
@@ -24,12 +25,15 @@ class PointSet():
         ----------
         xyz_coords : numpy.array of shape (npoints, 3)
             Array of x, y, z coordinates of points to be added to the point set, optional
-            DESCRIPTION. The default is None.
+            The default is None.
         regular : boolean, optional
-            DESCRIPTION. The default is True.
+            Flag indicating whether set created will be based on a regular grid.
+            The default is True.
+        point_class : class inherited from Point class
+            Class to be used to create points in the point set
         **kwargs : dictionary
             Dictionary of optional keyword arguments allowing to create a point set with
-            different options.
+            different options if argument xyz_coords is not provided (have value of None).
             Possible options:
                 'x', 'y', 'z' - np.array of shapes (nx, ), (ny, ), (nz, ).
                 In this case, the code will use numpy.meshgrid to create the points.
@@ -57,6 +61,7 @@ class PointSet():
         if xyz_coords is not None:
             self.num_elements = xyz_coords.shape[0]
             self.coordinates = xyz_coords
+            # _elements is a list of objects of class Point
             self._elements = self.create_points_list(xyz_coords, point_class)
             self.set_additional_attributes(xyz_coords)
 
@@ -86,7 +91,8 @@ class PointSet():
             points.append(point_class(x=point_coords[ind, 0],
                                       y=point_coords[ind, 1],
                                       z=point_coords[ind, 2],
-                                      index=ind, name=str(ind+1)))
+                                      name=str(ind+1)))
+            points[-1].index = ind
 
         return points
 
@@ -128,7 +134,7 @@ class PointSet():
 
     def setup_meshgrid_coordinates(self, **kwargs):
         """
-
+        Setup coordinates of the points utilizing numpy meshgrid method.
 
         Parameters
         ----------
@@ -154,15 +160,16 @@ class PointSet():
         x, y, z = np.meshgrid(kwargs['x'], kwargs['y'], kwargs['z'],
                               indexing='ij')
         self.coordinates = np.zeros((self.num_elements, 3))
-        self.coordinates[:, 0] = x.reshape(x, (self.num_elements, ))
-        self.coordinates[:, 1] = y.reshape(y, (self.num_elements, ))
-        self.coordinates[:, 2] = z.reshape(z, (self.num_elements, ))
+        self.coordinates[:, 0] = x.reshape((self.num_elements, ))
+        self.coordinates[:, 1] = y.reshape((self.num_elements, ))
+        self.coordinates[:, 2] = z.reshape((self.num_elements, ))
 
         self._elements = self.create_points_list(self.coordinates)
 
     def setup_linspace_coordinates(self, **kwargs):
         """
-
+        Setup coordinates of the points by creating x, y, z coordinates with
+        numpy linspace and then utilizing numpy meshgrid method
 
         Parameters
         ----------

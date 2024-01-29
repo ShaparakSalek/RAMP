@@ -1,15 +1,16 @@
+edx_api_key: your_api_key_here
+download_data: true
+process_data: true
+run_optimization: true
+plot_results: true
 data_case: 1
 directory_nrms_data: ../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data
 directory_plots: ../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data
 directory_seismic_data: ../../data/user/seismic
 directory_velocity_data: ../../data/user/velocity
-download_data: true
-edx_api_key: your_api_key_here
-plot_results: true
 receiversMax: 8000
 receiversMin: 4000
 receiversNum: 101
-run_optimization: true
 scenarios: 1-10
 seismic_sampling_interval: 0.002
 seismic_total_duration: 2.5
@@ -29,3 +30,4 @@ sources:
 stage1: 4
 stage2: 9
 threshold_nrms: 50
+number_proposals: 3

@@ -1,0 +1,12 @@
+edx_api_key: your-edx-key-here
+download_data: true
+run_optimization: true
+plot_results: true
+directory_simulation_data: ..\..\data\user\pressure
+directory_output_files: ..\..\output
+directory_plots: ..\..\output
+max_sensors: 5
+max_wells: 2
+scenarios: 1-21 # the more scenarios the longer optimization will run
+threshold_co2: 10
+number_proposals: 3

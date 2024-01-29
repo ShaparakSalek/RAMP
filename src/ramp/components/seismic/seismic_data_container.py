@@ -28,6 +28,7 @@ class SeismicDataContainer(DataContainer):
                  family='seismic', obs_name='seismic', data_directory=None,
                  data_setup=None, time_points=None, baseline=False,
                  data_reader=default_bin_file_reader, data_reader_kwargs=None,
+                 data_reader_time_index=False,
                  container_class='SeismicDataContainer',
                  presetup=False):
         """
@@ -52,16 +53,9 @@ class SeismicDataContainer(DataContainer):
         obs_name : str
             Name of observation with which the loaded data will be associated.
             By default, data linked to the SeismicDataContainer is 'seismic'.
-        data_reader : str or function
-            name of function that reads data file and returns a numpy.ndarray containing data
         data_directory : str, optional
             Path to the folder containing data (and possibly setup and time points)
             files. The default is None.
-        time_points : str or numpy.array, optional
-            Path to the file containing time points associated with data
-            if of type string.
-            Array of time points associated with data, i.e.,
-            time points at which data is provided if of type numpy.array
         data_setup : str or dict, optional
             Path to the csv file providing setup of multiple data files
             associated with the given data set if of type string. Dictionary with
@@ -77,6 +71,11 @@ class SeismicDataContainer(DataContainer):
                 't1', ..., 'tn' - keys corresponding to data at different time
                 points. n is a number of time points provided with time_points
                 argument.
+        time_points : str or numpy.array, optional
+            Path to the file containing time points associated with data
+            if of type string.
+            Array of time points associated with data, i.e.,
+            time points at which data is provided if of type numpy.array
         baseline : boolean
             Flag indicating whether data setup contains the baseline data.
             If it does, it should correspond to the file with key 't1',
@@ -84,6 +83,21 @@ class SeismicDataContainer(DataContainer):
             the component can also return a difference between a baseline
             and current time point data. In the latter case a new observation
             called 'delta_###' where '###' is obs_name can also be returned.
+        data_reader : str or function
+            name of function that reads data file and returns a numpy.ndarray
+            containing data or dictionary of numpy.ndarrays
+        data_reader_kwargs : dict
+            Dictionary of additional keyword arguments applicable to a particular
+            data reader method
+        data_reader_time_index : boolean
+            Flag indicating whether data reader requires time index to be passed
+            as one of the key arguments. This might be needed if all time points
+            data is saved in one data file versus multiple and file name does not
+            determine what time point the data corresponds to
+        presetup : boolean
+            Flag indicating whether the add_obs_to_be_linked method should be
+            used on this object to add observations to be used as inputs for
+            other components
 
         Returns
         -------
@@ -162,7 +176,7 @@ class SeismicDataContainer(DataContainer):
             return data_out
 
 
-def test_scenario_seismic():
+def test_seismic_data_container():
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10
@@ -269,4 +283,4 @@ def test_scenario_seismic():
 
 if __name__ == "__main__":
 
-    test_scenario_seismic()
+    test_seismic_data_container()

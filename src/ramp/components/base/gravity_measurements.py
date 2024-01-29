@@ -11,48 +11,41 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))))
 from ramp.components.base.monitoring_technology import MonitoringTechnology
 from ramp.components.base import process_time_points, get_indices
+from ramp.components.base.in_situ_measurements import (
+    default_map_dim_index_2_point_index, default_map_point_index_2_dim_index)
 
 
-def default_map_dim_index_2_point_index(multi_index, dims):
+def distance_based_argsort(point, points):
     """
-    Convert a tuple of index arrays into flat index
+    Calculate an array of indices sorting euclidean distances between a given point
+    and a set of points in ascending order.
 
     Parameters
     ----------
-    multi_index : tuple of integers
-        A tuple of integers, one integer for each dimension.
+    point : array-like
+        DESCRIPTION.
+    points : TYPE
+        DESCRIPTION.
 
-    dims : tuple of integers
-        The shape of array into which the indices from multi_index apply.
-
-    Returns an index of element in a flat array.
+    Returns
     -------
     None.
 
     """
-    # The elements are assumed to be read in row-major style (C - by default)
-    return np.ravel_multi_index(multi_index, dims)
+    # Reshape point just in case
+    point = point.reshape((1, -1))
 
-def default_map_point_index_2_dim_index(flat_index, dims):
-    """
-    Convert a flat index into a tuple of multidimensional indices
+    # Calculate difference between point and points
+    diff = points-point
+    # Calculate distance as norm
+    dist = np.linalg.norm(diff, axis=1)
+    # Find indices sorting distance array in ascending order
+    indices = np.argsort(dist)
 
-    Parameters
-    ----------
-    flat_index : integer, or array-like of integers
-        Index of element within an array.
+    return indices
 
-    dims : tuple of integers
-        The shape of array into which the indices for returned multi_index apply.
 
-    Returns a tuple of indices.
-    -------
-    None.
-
-    """
-    return np.unravel_index(flat_index, dims)
-
-def get_measurements(dim_indices, data=None, baseline=None, criteria=1):
+def get_multiple_measurements(dim_indices, data=None, baseline=None, criteria=1):
 
     # if data is provided
     if data is not None:
@@ -69,19 +62,19 @@ def get_measurements(dim_indices, data=None, baseline=None, criteria=1):
     return comp_data
 
 
-class InSituMeasurements(MonitoringTechnology):
+class GravityMeasurements(MonitoringTechnology):
 
     def __init__(self, name, parent, config, time_points, dim_indices=None,
-                 map_dim_index_2_point_index=None, criteria=1):
+                 map_dim_index_2_point_index=None, map_point_index_2_dim_index=None,
+                 num_neighbors=4, criteria=2):
         """
-        The InSituMeasurements class is designed to model monitoring well
-        simulation which can track pressure, TDS, pH, etc at a given location
-        and compare them to a threshold.
+        The GravityMeasurements class is designed to model gravity monitoring
+        at a given location and compare them to a threshold.
 
         Parameters
         ----------
         name : str
-            Name of InSituMeasurements class instance under which it will
+            Name of GravityMeasurements class instance under which it will
             be known to its parent
         parent : SystemModel class instance
             System model to which the instance belongs
@@ -99,6 +92,10 @@ class InSituMeasurements(MonitoringTechnology):
         map_dim_index_2_point_index : method
             Method mapping list of indices into index of point receiver within
             provided Configuration instance config
+        num_neighbors : int
+            Number of additional data points closest to the selected receiver
+            location at which the gravity value has to be above a threshold
+            for a leak to be considered detected
         criteria : int
             Flag variable indicating how the data is compared to a threshold
             Value of 1 means data is compared as it is or difference (data-baseline)
@@ -109,7 +106,7 @@ class InSituMeasurements(MonitoringTechnology):
 
         Returns
         -------
-        Instance of InSituMeasurements class.
+        Instance of GravityMeasurements class.
 
         """
         # Setup keyword arguments of the 'model' method provided by the system model
@@ -118,7 +115,7 @@ class InSituMeasurements(MonitoringTechnology):
         super().__init__(name, parent, model_kwargs=model_kwargs)
 
         # Add type attribute
-        self.class_type = 'InSituMeasurements'
+        self.class_type = 'GravityMeasurements'
 
         # Setup additional attributes
         self.configuration = config
@@ -126,10 +123,20 @@ class InSituMeasurements(MonitoringTechnology):
             self.index_map = default_map_dim_index_2_point_index
         else:
             self.index_map = map_dim_index_2_point_index
+
+        if map_point_index_2_dim_index is None:
+            self.inverse_index_map = default_map_point_index_2_dim_index
+        else:
+            self.inverse_index_map = map_point_index_2_dim_index
+
+        # Determine what the data will be compared to a threshold
         self.criteria = criteria
 
         # Setup attribute data_indices
         self.get_indices(dim_indices=dim_indices)
+
+        # Save number of neighbors to look at
+        self.num_neighbors = num_neighbors
 
         # Setup index of the data point
         self.point_index = None  # not known until data is made available to the component
@@ -178,6 +185,41 @@ class InSituMeasurements(MonitoringTechnology):
             # If no map is provided
             self.point_coords = list(self.data_indices)
 
+    def find_neighbors_indices(self, data_shape):
+        """
+        Find tuple indices of n closest data points where n is number of neighbors
+        to consider.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Get coordinates of all receivers
+        receiver_coords = self.configuration.receivers.coordinates
+
+        # Calculate distance between point of interest and all receivers.
+        # Then sort them based on the distance and take the first self.num_neighbors
+        # receivers closest to the point of interest excluding the first receiver
+        # in the list since it's the same as the point of interest
+        neighbors_flat_indices = distance_based_argsort(
+            self.point_coords, receiver_coords)[1:self.num_neighbors+1]
+
+        # Transform indices into tuples of data indices
+        self.neighbors_indices = self.inverse_index_map(
+            neighbors_flat_indices, data_shape)
+
+    def combine_indices(self):
+        # Add data point indices to the end of the neighbor point indices
+        if isinstance(self.data_indices, int):
+            combined_indices = (np.append(self.neighbors_indices, self.data_indices),)
+        elif isinstance(self.data_indices, tuple):
+            combined_indices = tuple([
+                np.append(self.neighbors_indices[ind], self.data_indices[ind])\
+                    for ind in range(len(self.neighbors_indices))])
+
+        return combined_indices
+
     def process_data(self, p, time_point=None, data=None, baseline=None,
                      dim_indices=None, **kwargs):
         """
@@ -220,18 +262,20 @@ class InSituMeasurements(MonitoringTechnology):
             # Update point coordinates
             self.get_coordinates(data.shape)
             out['receiver_xyz'] = self.point_coords
-            # Get the closest neighbors coordinates
+            # Update neighbors indices
+            self.find_neighbors_indices(data.shape)
 
         # Set output defaults
         leak_detected_ts = 0
         detection_time_ts = np.inf
 
         # Get data to compare to a threshold
-        comp_data = get_measurements(self.data_indices, data=data,
-                                     baseline=baseline, criteria=self.criteria)
+        comp_data = get_multiple_measurements(
+            self.combine_indices(), data=data, baseline=baseline,
+            criteria=self.criteria)
 
         # Compare measurement data against threshold
-        if comp_data >= actual_p['threshold']:
+        if np.all(comp_data >= actual_p['threshold']):
             # These observations keep track of history: ts for time series
             leak_detected_ts = 1
             detection_time_ts = time_point
@@ -271,7 +315,7 @@ class InSituMeasurements(MonitoringTechnology):
         return out
 
 
-def test_in_situ_measurements():
+def test_gravity_measurements():
     import matplotlib.pyplot as plt
     from openiam import SystemModel
     from ramp.components.base import DataContainer
@@ -284,53 +328,41 @@ def test_in_situ_measurements():
     sm_model_kwargs = {'time_array': time_array}   # time is given in days
 
     # Setup required information for data container before creating one
-    obs_name = ['pressure', 'saturation']
+    obs_name = 'gravity'
     data_directory = os.path.join('..', '..', '..', '..', 'data', 'user', 'pressure')
     output_directory = os.path.join('..', '..', '..', '..', 'examples', 'user',
-                                    'output', 'test_in_situ_measurements')
+                                    'output', 'test_gravity_measurements')
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
     data_reader = default_h5_file_reader
     data_reader_kwargs = {'obs_name': obs_name}
 
     num_time_points = len(time_points)
-    num_scenarios = 5
-    family = 'insitu'
+    # scenarios = list(range(100, 116))
+    scenarios = [1, 7, 10, 5, 9]
+    family = 'gravity'
     data_setup = {}
-    for ind in range(1, num_scenarios+1):
-        data_setup[ind] = {'folder': 'sim0001_0100'}
+    for scen in scenarios:
+        data_setup[scen] = {'folder': 'sim0001_0100'}
         for t_ind in range(1, num_time_points+1):
-            data_setup[ind][f't{t_ind}'] = f'sim{ind:04}.h5'
+            data_setup[scen][f't{t_ind}'] = f'sim{scen:04}.h5'
     baseline = False
 
-    # Create configuration for InSituMeasurements component
-    # Number of points in x-, y-, and z-directions
-    nx = 40
-    ny = 20
-    nz = 32
-    num_p = nx*ny*nz
-    xmin, xmax = 4000, 8000
-    ymin, ymax = 1500, 3500
+    # Create configuration for GravityMeasurements component
+    # Number of points in x- and y-directions
+    nx = 41
+    ny = 21
+    num_p = nx*ny
+    x = np.linspace(4000.0, 8000.0, nx)
+    y = np.linspace(1500.0, 3500.0, ny)
 
-    # vertex: vx, vy and vz
-    # voxel center: x, y, z
-    vx = np.linspace(xmin, xmax, nx+1)
-    vy = np.linspace(ymin, ymax, ny+1)
-    x = np.linspace((vx[0]+vx[1])/2.0, (vx[-2]+vx[-1])/2.0, nx)
-    y = np.linspace((vy[0]+vy[1])/2.0, (vy[-2]+vy[-1])/2.0, ny)
-
-    z = np.array([2.5, 7.5, 34.4, 83.1, 131.9, 180.6, 229.4, 278.1, 326.9,
-                  375.6, 424.4, 473.1, 521.9, 570.5, 619.0, 667.5, 716.0,
-                  764.5, 813.0, 861.5, 910.0, 958.5, 1007.0, 1055.5, 1104.0,
-                  1152.5, 1201.0, 1248.5, 1295.0, 1341.5, 1376.3, 1399.6])
-    xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+    xx, yy = np.meshgrid(x, y, indexing='ij')
     xyz_coords = np.zeros((num_p, 3))
     xyz_coords[:, 0] = xx.reshape((num_p, ))
     xyz_coords[:, 1] = yy.reshape((num_p, ))
-    xyz_coords[:, 2] = zz.reshape((num_p, ))
 
-    pressure_data_config = BaseConfiguration(
-        sources=None, receivers=xyz_coords, name='Pressure config')
+    gravity_data_config = BaseConfiguration(
+        sources=None, receivers=xyz_coords, name='Gravity config')
 
     # Create system model
     sm = SystemModel(model_kwargs=sm_model_kwargs)
@@ -345,25 +377,30 @@ def test_in_situ_measurements():
                       data_reader_time_index=True
                       ))
     # Add parameters of the container
-    dc.add_par('index', value=1, vary=False)
+    index = scenarios[0]
+    dc.add_par('index', value=index, vary=False)
     # Add gridded observation
-    for nm in obs_name:
+    for nm in [obs_name]:
         dc.add_grid_obs(nm, constr_type='matrix', output_dir=output_directory)
         dc.add_obs_to_be_linked(nm, obs_type='grid')
 
-    # dim_indices = (4, 10, 25) # leak is detected for some time points
-    dim_indices = (6, 10, 25) # leak detected for some time points
-    # dim_indices = (38, 10, 25) # leak is not detected at any of the time points
+    # dim_indices = (11, 13) # leak is detected for some time points
+    dim_indices = (10, 11) # leak detected for some time points
+    # dim_indices = (35, 11) # leak is not detected at any of the time points
+    # Setup the rest of parameters
+    gravity_anomaly_threshold = 15 # uGal
+    criteria = 2 # compare absolute value of data to a threshold
+    num_neighbors = 4 # number of neighbor points at which anomaly should exceed threshold
 
-    # Add insitu measurements component
+    # Add gravity measurements component
     meas = sm.add_component_model_object(
-        InSituMeasurements(name='meas', parent=sm, config=pressure_data_config,
+        GravityMeasurements(name='meas', parent=sm, config=gravity_data_config,
                            time_points=time_points, dim_indices=dim_indices,
-                           criteria=1))
-    delta_pressure_threshold = 15
-    meas.add_par('threshold', value=delta_pressure_threshold, vary=False)
+                           num_neighbors=num_neighbors, criteria=criteria))
+
+    meas.add_par('threshold', value=gravity_anomaly_threshold, vary=False)
     # Add keyword arguments linked to the data container outputs
-    meas.add_kwarg_linked_to_obs('data', dc.linkobs['pressure'], obs_type='grid')
+    meas.add_kwarg_linked_to_obs('data', dc.linkobs['gravity'], obs_type='grid')
     # Add observations
     for nm in ['leak_detected', 'detection_time']:
         meas.add_obs(nm)        # covers the whole simulation period
@@ -375,12 +412,11 @@ def test_in_situ_measurements():
     print('-----------------------------')
     sm.forward()
 
-    # Get saved data from files
-    # delta pressure, saturation
-    dpressure_data = sm.collect_gridded_observations_as_time_series(
-        dc, 'pressure', output_directory, rlzn_number=0)  # (12, 40, 20, 32)
-    saturation_data = sm.collect_gridded_observations_as_time_series(
-        dc, 'saturation', output_directory, rlzn_number=0)
+    # Get saved gravity anomaly data from files
+    gravity_data = sm.collect_gridded_observations_as_time_series(
+        dc, 'gravity', output_directory, rlzn_number=0)  # (12, 41, 21)
+
+    print('Gravity data shape:', gravity_data.shape)
 
     # Collect data point coordinate
     coords = sm.collect_gridded_observations_as_time_series(
@@ -393,40 +429,23 @@ def test_in_situ_measurements():
         evaluations[nm] = sm.collect_observations_as_time_series(meas, nm)
         evaluations[nm + '_ts'] = sm.collect_observations_as_time_series(meas, nm + '_ts')
 
-    # Plot delta pressure and saturation z-slice plots
-    t_ind = 3
-    z_ind = 25
     dx = 5
-    dy = 4
-    cmap = 'hot_r'
-    sensor_color = 'darkgrey'
-    fig = plt.figure(figsize=(16, 6))
-    # first subplot
-    ax = fig.add_subplot(121)
-    ax_im = ax.pcolormesh(x, y, dpressure_data[t_ind, :, :, z_ind].T, cmap=cmap)
+    dy = 3
+    cmap = 'jet'
+    t_ind = 5
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111)
+    ax_im = ax.pcolormesh(x, y, gravity_data[t_ind, :, :].T, cmap=cmap)
+    ax.set_title(f'Scenario {index}: gravity anomaly at t={time_points[t_ind]} years')
+    sensor_color = 'grey'
     ax.plot(coords[0], coords[1], 'o', color=sensor_color)
     ax.annotate('Sensor', (coords[0], coords[1]),
                 xytext=(coords[0]+30, coords[1]+30), color=sensor_color)
-    ax.set_title(f'Delta pressure at t={time_points[t_ind]} years, depth={z[z_ind]} m')
-    plt.colorbar(ax_im, label='dP, [Pa]')
+    plt.colorbar(ax_im, label='G, [uGal]')
     ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
     ax.set_xlabel('x, [m]')
     ax.set_yticks(y[0:-1:dy], labels=y[0:-1:dy])
     ax.set_ylabel('y, [m]')
-
-    # second subplot
-    ax = fig.add_subplot(122)
-    ax_im = ax.pcolormesh(x, y, saturation_data[t_ind, :, :, z_ind].T, cmap=cmap)
-    ax.plot(coords[0], coords[1], 'o', color=sensor_color)
-    ax.annotate('Sensor', (coords[0], coords[1]),
-                xytext=(coords[0]+30, coords[1]+30), color=sensor_color)
-    ax.set_title(f'CO2 saturation at t={time_points[t_ind]} years, depth={z[z_ind]} m')
-    plt.colorbar(ax_im, label='S, [-]')
-    ax.set_xticks(x[0:-1:dx], labels=x[0:-1:dx])
-    ax.set_xlabel('x, [m]')
-    ax.set_yticks(y[0:-1:dy], labels=y[0:-1:dy])
-    ax.set_ylabel('y, [m]')
-    fig.tight_layout()
 
     # Plot leak_detected metric
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
@@ -435,13 +454,15 @@ def test_in_situ_measurements():
         axs[ind].scatter(time_points, evaluations[nm], s=50, c=colors)
         try:
             mark_time_ind = np.where(evaluations[nm]==1)[0][0]
-            axs[ind].plot(2*[time_points[mark_time_ind]], [-0.05, 1.1], '--', color='gray')
+            axs[ind].plot(2*[time_points[mark_time_ind]], [-0.05, 1.1],
+                          '--', color='gray')
         except IndexError:
             pass
         axs[ind].set_xlabel('Time, [years]')
     axs[0].set_yticks([0, 1], labels=[0, 1])
     axs[0].set_ylabel('Leak detected (History)')
     axs[1].set_ylabel('Leak detected (Propagated)')
+    fig.suptitle(f'Scenario {index}')
     fig.tight_layout()
 
     # Print whether leak was detected and detection time if applicable
@@ -456,4 +477,4 @@ def test_in_situ_measurements():
 
 if __name__ == "__main__":
 
-    test_in_situ_measurements()
+    test_gravity_measurements()

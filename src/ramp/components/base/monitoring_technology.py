@@ -47,7 +47,7 @@ class MonitoringTechnology(ComponentModel):
         # Add type attribute
         self.class_type = 'MonitoringTechnology'
 
-    def process_data(self, p, data=None, baseline=None, time_point=None, **kwargs):
+    def process_data(self, p, time_point=None, data=None, baseline=None, **kwargs):
         """
 
 
