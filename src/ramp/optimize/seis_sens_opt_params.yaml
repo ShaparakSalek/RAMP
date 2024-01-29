@@ -33,31 +33,33 @@ output:
   # User defined data to collect percentage
   target_dtc: 5
  #  User defined threshold of the total sensitivity threshold
-  sens_threshold: 0.9
+  sens_threshold: [0.2,0.8]
   
 input:
   # Directory path for data
-  datadir: ./example_data/
+  datadir: ./sensitivity_data/
   # flag to use "segy" format, 0 to read data from bin files directly
   segy_read: 1
-
+  # EDX workspace id
+  workspace_id: 'nrap-task-4-monitoring'
+  # EDX data folder id
+  data_folder_id: 'c17b770f-4034-4798-a0e7-95e19a434d77'
+  # EDX model folder id
+  model_folder_id: '0762246f-c483-4051-b53a-e1e5645ffb9d'
+  # api key, you can get this by hovering your mouse at EDX profile page 'EDX-API-KEY'
+  api_key: ' '
 sensitivities:
   # flag to control the normalization of the sensivity
   sen_norm: 1
   # List of years for monitoring
   years: [80, 85, 90, 95, 100, 125]
-  # Maximum sensitivity values
-  senMax: [1e7, 1e7, 1e7, 1e9]
-  # contour values for sensitivity
-  contour_values: [0.2, 0.6]
   # downsample factor for sources
   ks: 4
   # downsample factor for receivers
   kr: 4
-  # wavefield of the seismic wave
-  wavefield: ['P', 'S']
-  # velocity type
-  vpvs: ['Vp', 'Vs']
+  # different components of seismic sensitivity energy
+  components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs'],['P+S','Vp'],['P+S','Vs'],['P+S','Vp+Vs'],['P','Vp+Vs']]
+  #components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs']]
   # units used for model plot
   units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}
   
