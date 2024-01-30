@@ -4,7 +4,7 @@
 # Xianjin Yang, LLNL  yang25@llnl.gov
 
 import numpy as np
-import h5py, sys, os, glob
+import h5py, sys, os, glob,shutil
 import multiprocessing
 import matplotlib.pyplot as plt
 from natsort import natsorted # pip install natsort
@@ -26,11 +26,20 @@ years = params['years']
 nt = len(years)
 
 rootdir = params['rootdir']
+workspace_id=params['workspace_id']
+data_folder_id=params['data_folder_id']
+api_key=params['api_key']
+if not glob.glob(rootdir + 'sim*'):
+    download_data_from_edx(workspace_id,data_folder_id,api_key,rootdir) 
+    print('downloaded data from edx')
+    for file in glob.glob(rootdir + 'sim*'):
+        print(file)
+        os.makedirs(file[:-4])
+        shutil.unpack_archive(file, file[:-4])
+        os.remove(file)
+
 outdir = params['outdir']
 ths=params['ths']
-h5dir = os.path.join(rootdir, 'sim0001_0100.p_co2_tds_grav/')
-if not os.path.exists(h5dir):
-    os.makedirs(h5dir)
 all_gra_sims_fn=get_all_h5_filenames(rootdir)
 # Grid dimensions
 nx, ny, nz = params['nx'], params['ny'], params['nz']
@@ -67,22 +76,22 @@ for gra_file_name in all_gra_sims_fn:
     for j,group in enumerate(groups):
         datasets = get_datasets(group+'/', dum_hdf)
         if j>1:
-            gra_data_all_t_step.append(dum_hdf[datasets[0]])
+            gra_data_all_t_step.append(dum_hdf[datasets[1]])
     gra_data_all_t_all_sims.append(gra_data_all_t_step)
 gra_data_all_t_all_sims=np.abs(np.array(gra_data_all_t_all_sims))
 
 
 datasets = get_datasets(groups[0]+'/', dum_hdf)
-grav_x=np.array(dum_hdf[datasets[0]])
-grav_y=np.array(dum_hdf[datasets[1]])
-porosity=np.array(dum_hdf[datasets[2]])
-steps=np.array(dum_hdf[datasets[3]])
-times=np.array(dum_hdf[datasets[4]])
-x=np.array(dum_hdf[datasets[8]])
-y=np.array(dum_hdf[datasets[9]])
-z=np.array(dum_hdf[datasets[10]])
 
-
+ert_abmn=np.array(dum_hdf[datasets[0]])
+grav_x=np.array(dum_hdf[datasets[1]])
+grav_y=np.array(dum_hdf[datasets[2]])
+porosity=np.array(dum_hdf[datasets[3]])
+steps=np.array(dum_hdf[datasets[4]])
+times=np.array(dum_hdf[datasets[5]])
+x=np.array(dum_hdf[datasets[10]])
+y=np.array(dum_hdf[datasets[12]])
+z=np.array(dum_hdf[datasets[14]])
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)

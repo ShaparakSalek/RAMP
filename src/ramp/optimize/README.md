@@ -1,3 +1,9 @@
+# Griavty Monitoring design optimazation
+## Usage
+Run the following code:
+'''
+python gravity_monitoring.py
+'''
 
 # Sensitivity-Based Seismic Monitoring Design
 
