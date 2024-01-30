@@ -782,14 +782,18 @@ if __name__ == "__main__":
         y9 = np.array([plan[2] for plan in plans9])
         r9 = pareto(x9, y9)
 
+        time_dict = {index: value for index, value in enumerate(time_array)}
+        sources_dict = {index: value.tolist() for index, value in enumerate(sources)}
+        receivers_dict = {index: value.tolist() for index, value in enumerate(receivers)}
+
         plans = {'stage1': [plans1, plans2, plans3],
                  'stage2':[plans4,plans5,plans6],
                  'stage3':[plans7,plans8,plans9] }
-        json.dump({'arrays':configuration.arrays, 'plans':plans},
-                  open('output.json','w'))
-        yaml.dump({'arrays':configuration.arrays, 'plans':plans},
+        json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
+                  open('output.json','w'),indent=4)
+        yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
                   open('output.yaml','w'))
-        pickle.dump({'arrays':configuration.arrays, 'plans':plans},
+        pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
                     open('output.dat', 'wb'))
 
         arrays_selected = []
@@ -845,12 +849,13 @@ if __name__ == "__main__":
 
         print('plans_selected', plans_selected)
 
-        json.dump({'arrays':arrays_summary, 'plans':plans_selected},
+        json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                   open('output_summary.json','w'))
-        yaml.dump({'arrays':arrays_summary, 'plans':plans_selected},
+        yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                   open('output_summary.yaml','w'))
-        pickle.dump({'arrays':arrays_summary, 'plans':plans_selected},
+        pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                     open('output_summary.dat','wb'))
+
 
     if inputs['plot_results']:
 
