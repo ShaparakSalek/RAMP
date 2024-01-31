@@ -232,7 +232,113 @@ class Tests(unittest.TestCase):
         Tests a gravity measurements component in a forward model against
         expected output for 3 different time points of data.
         """
-        pass
+        # System model arguments
+        time_points = np.array([5, 10, 20])
+        time_array = 365.25*time_points
+        sm_model_kwargs = {'time_array': time_array}   # time is given in days
+
+        output_directory = os.sep.join(['output', 'test_gravity_measurements'])
+        if not os.path.exists(output_directory):
+            os.mkdir(output_directory)
+
+        # Create configuration for GravityMeasurements component
+        x = np.array([4900., 5000., 5100.])
+        y = np.array([2500., 2600., 2700.])
+        nx = len(x)
+        ny = len(y)
+        num_p = nx*ny
+
+        xx, yy = np.meshgrid(x, y, indexing='ij')
+        xyz_coords = np.zeros((num_p, 3))
+        xyz_coords[:, 0] = xx.reshape((num_p, ))
+        xyz_coords[:, 1] = yy.reshape((num_p, ))
+
+        gravity_data_config = BaseConfiguration(
+            sources=None, receivers=xyz_coords, name='Gravity config')
+
+        # Create system model
+        sm = SystemModel(model_kwargs=sm_model_kwargs)
+
+        dim_indices = (1, 1) # leak detected for some time points
+        # Setup the rest of parameters
+        gravity_anomaly_threshold = 15 # uGal
+        criteria = 2 # compare absolute value of data to a threshold
+        num_neighbors = 4 # number of neighbor points at which anomaly should exceed threshold
+
+        # Add gravity measurements component
+        meas = sm.add_component_model_object(
+            GravityMeasurements(name='meas', parent=sm, config=gravity_data_config,
+                               time_points=time_points, dim_indices=dim_indices,
+                               num_neighbors=num_neighbors, criteria=criteria))
+        # Add parameter
+        meas.add_par('threshold', value=gravity_anomaly_threshold, vary=False)
+
+        # Setup dynamic gravity change data
+        dg_data = np.array(
+            # first time point
+            [[[-3.84089994, -3.84064007, -2.84475994],
+              [-6.42278004, -6.42243004, -3.84322],
+              [-6.42714977, -6.42679977, -3.84621]],
+            # second time point
+             [[-46.24840164, -45.8390007 , -27.9531002 ],
+              [-77.9355011 , -77.8864975 , -49.82839966],
+              [-72.21279907, -82.62719727, -54.30110168]],
+            # third time point
+             [[-52.17309952, -51.94480133, -33.86050034],
+              [-84.79399872, -84.7723999 , -55.70660019],
+              [-80.18779755, -91.23370361, -60.68840027]]])
+
+        # Add data keyword argument linked to the numpy array
+        meas.add_dynamic_kwarg('data', dg_data)
+        # Add observations
+        for nm in ['leak_detected', 'detection_time']:
+            meas.add_obs(nm)        # covers the whole simulation period
+            meas.add_obs(nm + '_ts')  # covers how values change in time
+        meas.add_grid_obs('receiver_xyz', constr_type='matrix', output_dir=output_directory)
+
+        # Run system model
+        sm.forward()
+
+        # Collect data point coordinate
+        coords = sm.collect_gridded_observations_as_time_series(
+            meas, 'receiver_xyz', output_directory, indices=[0], rlzn_number=0)[0]
+        true_coords = np.array([x[dim_indices[0]], y[dim_indices[1]], 0.0])
+
+        # Export scalar observations
+        evaluations = {}
+        for nm in ['leak_detected', 'detection_time']:
+            evaluations[nm] = sm.collect_observations_as_time_series(meas, nm)
+            evaluations[nm + '_ts'] = sm.collect_observations_as_time_series(meas, nm + '_ts')
+
+        true_evaluations = {}
+        true_evaluations['leak_detected_ts'] = np.array([
+            int(np.abs(dg_data[ind, dim_indices[0], dim_indices[1]])>=gravity_anomaly_threshold) \
+                for ind in range(len(time_points))])
+        true_evaluations['detection_time_ts'] = np.array([
+            time_array[ind] if true_evaluations['leak_detected_ts'][ind]==1 else np.inf \
+                for ind in range(len(time_points))])
+
+        # Compare receiver's coordinates
+        for true_val, val, coord_type in zip(true_coords, coords, ['x', 'y', 'z']):
+            self.assertTrue(
+                true_val-val == 0.0,
+                f'Receiver {coord_type}-coordinate is {val} but should be {true_val}.')
+
+        # Compare leak detected flags
+        for true_val, val, t in zip(true_evaluations['leak_detected_ts'],
+                                    evaluations['leak_detected_ts'],
+                                    time_points):
+            self.assertTrue(
+                true_val==val,
+                f'Leak detected flag at time t={t} years is {val} but should be {true_val}.')
+
+        # Compare detection time
+        for true_val, val in zip(true_evaluations['leak_detected_ts'],
+                                  evaluations['leak_detected_ts']):
+            self.assertTrue(
+                true_val==val,
+                f'Value of detection time output is {val} but should be {true_val}.')
+
 
     def test_in_situ_measurements(self):
         """Tests InSituMeasurements component linked to dynamic input.
@@ -282,17 +388,17 @@ class Tests(unittest.TestCase):
         # Setup dynamic pressure change data
         dp_data = np.array(
             # first time point
-            [[[[110., 110.,  60.], [ 30.,  30.,  20.], [ 10.,  20.,  10.]],
-              [[110.,  70.,  50.], [ 30.,  30.,  30.], [ 10.,  10.,  20.]],
-              [[100., 100., 100.], [ 40.,  40.,  30.], [ 20.,  10.,  20.]]],
+            [[[[110., 110., 60.], [30., 30., 20.], [10., 20., 10.]],
+              [[110., 70., 50.], [30., 30., 30.], [10., 10., 20.]],
+              [[100., 100., 100.], [40., 40., 30.], [20., 10., 20.]]],
             # second time point
-             [[[ 40.,  40.,  40.], [ 40.,  40.,  30.], [ 30.,  40.,  20.]],
-              [[ 40.,  40.,  30.], [ 40.,  40.,  40.], [ 30.,  30.,  30.]],
-              [[ 40.,  40.,  30.], [ 50.,  50.,  40.], [ 30.,  30.,  30.]]],
+             [[[40., 40., 40.], [40., 40., 30.], [30., 40., 20.]],
+              [[40., 40., 30.], [40., 40., 40.], [30., 30., 30.]],
+              [[40., 40., 30.], [50., 50., 40.], [30., 30., 30.]]],
             # third time point
-             [[[ 40.,  30.,  30.], [ 40.,  30.,  20.], [ 20.,  30.,  10.]],
-              [[ 40.,  40.,  20.], [ 30.,  30.,  30.], [ 20.,  20.,  20.]],
-              [[ 30.,  30.,  30.], [ 40.,  30.,  20.], [ 30.,  20.,  20.]]]])
+             [[[40., 30., 30.], [40., 30., 20.], [20., 30., 10.]],
+              [[40., 40., 20.], [30., 30., 30.], [20., 20., 20.]],
+              [[30., 30., 30.], [40., 30., 20.], [30., 20., 20.]]]])
 
         # Add data keyword argument linked to the numpy array
         meas.add_dynamic_kwarg('data', dp_data)
@@ -478,7 +584,7 @@ class Tests(unittest.TestCase):
 
         # Data at two time points and selected locations
         ind_to_check1 = (np.array([0, 0, 4, 8, 8], dtype=int),
-                         np.array([6,  6,  51,  96,  96], dtype=int),
+                         np.array([6, 6, 51, 96, 96], dtype=int),
                          np.array([54, 55, 54, 54, 61], dtype=int))
         true_seismic_data1 = np.array([
             42.97988129, 46.06204224, 42.98212814, 42.98988342, 43.18157196])
@@ -668,7 +774,7 @@ class Tests(unittest.TestCase):
 
 BASE_TESTS = [
     'test_data_container',
-    # 'test_gravity_measurements',
+    'test_gravity_measurements',
     'test_in_situ_measurements',
     'test_plume_estimate',
     'test_seismic_data_container',
