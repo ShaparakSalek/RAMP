@@ -47,17 +47,17 @@ def read_sens_from_segy(filename,sen_nor):
     """
     st1 = _read_segy(filename)
     sens2d_read=[]
-    for i,tr in enumerate(st1):
+    for i, tr in enumerate(st1):
         sens2d_read.append(tr.data)
-    sens=np.array(sens2d_read)
-    if sen_nor==1:
+    sens = np.array(sens2d_read)
+    if sen_nor == 1:
         maxSens = np.max(sens)
         minSens = np.min(sens)
         dsens = maxSens - minSens
         sens = (sens - minSens) / dsens
     return sens
 
-def download_data_from_edx(workspace_id,folder_id,api_key,outdir):
+def download_data_from_edx(workspace_id, folder_id, api_key, outdir):
     headers = {"EDX-API-Key": api_key}
 
     data = {
@@ -98,15 +98,15 @@ def download_data_from_edx(workspace_id,folder_id,api_key,outdir):
 
 
 def get_all_h5_filenames(rootdir):
-    h5_dirs=glob.glob(rootdir+'sim*')
-    h5_dirs=sorted(h5_dirs)
-    for i,h5dir in enumerate(h5_dirs):
+    h5_dirs = glob.glob(rootdir+'sim*')
+    h5_dirs = sorted(h5_dirs)
+    for i, h5dir in enumerate(h5_dirs):
         h5files = glob.glob(h5dir + '/*.h5')
-        h5files=sorted(h5files)
-        if i==0:
-            all_gra_sims_fn=h5files
+        h5files = sorted(h5files)
+        if i == 0:
+            all_gra_sims_fn = h5files
         else:
-            all_gra_sims_fn=all_gra_sims_fn+h5files
+            all_gra_sims_fn = all_gra_sims_fn+h5files
     return all_gra_sims_fn
 
 
