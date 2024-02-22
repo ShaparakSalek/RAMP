@@ -217,6 +217,29 @@ class GravityMonitoringOptimization:
         plt.tight_layout()
         plt.savefig(self.outdir+'/detectability_time_th.png')
 
+    def plot_max_detectability_vs_time(self):
+        """
+        Plots the maximum detectability versus time for different thresholds.
+
+        This method iterates over the set thresholds and calculates the maximum detectability at each time step. It then plots these maximum detectability values over time for each threshold, providing a visual representation of how detectability changes over time under different threshold settings.
+        """
+        plt.figure()
+        for th_gra in self.ths:
+            det_array = []
+
+            for i, time in enumerate(self.times):
+                gra_all_sims = self.gra_data_all_t_all_sims[:, i, :, :]
+                detectability = np.sum(gra_all_sims > th_gra, axis=0) / len(self.gra_data_all_t_all_sims)
+                max_det = np.max(detectability)
+                det_array.append(max_det)
+
+            plt.plot(self.times, det_array, 'o-', label='th=' + str(th_gra))
+
+        plt.legend()
+        plt.xlabel('time (yr)')
+        plt.ylabel('max detectability')
+        plt.title('max detectability vs time')
+        plt.savefig(self.outdir + '/max_detectability_vs_time.png')
 
 if __name__ == "__main__":
     #input_yaml_path='./control_file_interface.yaml'
@@ -229,3 +252,4 @@ if __name__ == "__main__":
     grav_data=GravityMonitoringOptimization(yaml_path)
     grav_data.calculate_detectability()
     grav_data.plot_detectability()
+    grav_data.plot_max_detectability_vs_time()
