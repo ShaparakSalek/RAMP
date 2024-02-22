@@ -88,7 +88,9 @@ GravityMonitoringOptimization:
   # gravity measurement stations on the ground surface
   ngx: 41
   ngy: 21  
+  # Output directory
   outdir: './output'
+  # detection thresholds
   ths: [3,5,7,10,15,20]
 
 OptimizationSetup1:

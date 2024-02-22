@@ -6,7 +6,7 @@
 
 """
 import yaml
-from obspy.io.segy.core import _read_segy
+
 import numpy as np
 import requests
 import glob
@@ -45,6 +45,7 @@ def read_sens_from_segy(filename,sen_nor):
     Returns:
         sens (np.array): 2D array of sensitivity values.
     """
+    from obspy.io.segy.core import _read_segy
     st1 = _read_segy(filename)
     sens2d_read=[]
     for i,tr in enumerate(st1):
