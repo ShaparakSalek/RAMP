@@ -1,6 +1,9 @@
-*.png
 *.csv
-*.txt
+*.json
 *.pdf
-*.tiff
+*.pkl
+*.png
 *.py
+*.tiff
+*.txt
+*.yaml

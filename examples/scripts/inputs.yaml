@@ -11,7 +11,7 @@ directory_velocity_data: ../../data/user/velocity
 receiversMax: 8000
 receiversMin: 4000
 receiversNum: 101
-scenarios: 1-10
+scenarios: 1-50
 seismic_sampling_interval: 0.002
 seismic_total_duration: 2.5
 sourceMax: 7840

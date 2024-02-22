@@ -1,0 +1,205 @@
+DownloadData:
+    Run: False
+    EDXAPIKey:  # in quotes or without
+    WorkspaceID: 'nrap-task-4-monitoring'
+    DataFolderID:
+    OutputDirectory: # where to place the data; default and recommended is data/user/whatever
+    Instructions:  # applicable to each data set case
+        Unzip: True
+        DeleteArchive: True
+        # Scenarios: 1-100, 123
+# -----------------------------
+ModelParams:
+    StartTime: 0
+    EndTime: 50
+    TimeStep: 5
+#   or only
+    TimePoints:
+    OutputDirectory: ''
+    Logging: Debug # for future
+# -----------------------------
+Workflow:
+    Type: Evaluation # (or Optimization, or SensitivityAnalysis, or VOIAnalysis)
+    Setup: EvaluationSetup1  # name is arbitrary but has to be present below in the setup
+#   or
+    Type: Optimization
+    Setup: OptimizationSetup1 # name of key below containing applicable setup entries; applicable for Optimization and SensitivityAnalysis approaches;
+#	 e.g., OptimizationSetup1, or SensitivityAnalysis1, or EvaluationSetup1
+# -----------------------------
+EvaluationSetup1:
+    Analysis: Forward # (or LHS) for evaluation
+#      different approach will have different setup
+#	    or
+    Components: [MonitoringTechnology1, MonitoringTechnology2,...] # not needed for sensitivity analysis
+# -----------------------------
+MonitoringTechnology1:
+    Type: Seismic # (or InSitu, or VOI, or Gravity)
+    InputData:
+        Type: Model
+        ModelName: Forward # or component name
+#       or
+        Type: File
+        FileDirectory: # Folder where setup file is located
+        SetupFilename: # name of file with setup data
+        TimePoints: # at which the data files are available, provided as list or as a file
+        Name: # data name if applicable, default is 'data';
+        Baseline: True # (if the first time point is baseline or to be used as baseline)
+        FileReader:
+            Name: default
+            Parameters:
+    DataConfiguration: # associated with data
+        Name: # might be needed in the future for other components
+        # and can be provided as a separate item in the control file,
+        # e.g. if used for multiple technologies
+        Type: Seismic  # (or Base)
+#            for seismic
+        Sources:
+            xyz: # e.g., file or list
+#           or separately
+            x:
+            y:
+            z:
+        Receivers:
+            xyz: # e.g., file or list
+#           or separately
+            x:
+            y:
+            z:
+        TotalDuration:
+        SamplingInterval:
+#       or
+        SampleTimePoints:
+    Parameters:
+        index: # standard setup of parameters, like in OpenIAM
+        threshold: # for NRMS if seismic or for pressure if InSitu or for gravity if Gravity
+        criteria: # might depend on whether
+    Outputs: [DetectionTime, LeakDetected, ProbLeakDetected, NRMS, Data] # might not be needed if setup for Optimization
+    # for multiple scenarios it can be probability of leak detected
+    # We can also simplify optimization if we add to outputs an option to create
+    # a file in the right format for optimization, e.g. Optimization_NRMS
+    Plots:
+        plot1:
+            Type: TimeSeries # or Data
+    TechnologyConfiguration:  # for seismic, for evaluation or optimization
+        Evaluated: # for evaluation
+            Type: 'set' # union
+            source1: []  # list contain coordinates of receivers
+            source2: []
+            # We also need to bring an option for configuration to vary over time
+        Selected: # path to the file with arrays configurations; for optimization; can be of the form
+            Type:
+            source1: []  # list contain coordinates of receivers
+            source2: []
+#           or ways to generate arrays automatically, or one of built-in ways, e.g. based on distance between receivers and sources
+# -----------------------------
+MonitoringTechnology2:
+    Type: InSitu
+    InputData:
+        Type: Model
+        ModelName: Forward # or component name
+#       or
+        Type: File
+        FileDirectory: # Folder where setup file is located
+        SetupFilename: # name of file with setup data
+        TimePoints: # at which the data files are available
+        Name: # data name, e.g., pressure
+    DataConfiguration: # associated with data
+        Name: # might be needed in the future for other components
+        Type: Base
+        Sources: None # default is None, if not used
+        Receivers:
+            xyz: # e.g., file or list
+#           or separately
+            x:
+            y:
+            z:
+    TechnologyConfiguration: None # if None, use the whole data set; not good idea or might not be available for InSitu
+# -----------------------------
+OptimizationSetup1:
+    Components: [MonitoringTechnology1, MonitoringTechnology2,...]
+    # TODO If data is already processed can we come up with easier setup?
+    # scenarios indices are setup within the MonitoringTechnology1, etc.
+    # For multiple technologies index 1 in both data sets should correspond to the same scenario
+    Method:  # if applicable: "Search", "Stage", "MultiTech", "MultiObj"
+    Stages:
+        nstages: 2 # number of stages
+        stage1: 4
+        stage2: 9
+    Domain: All # domain of search of optimal solution (or Selected);
+    # if Selected than the key should be present
+    # in the corresponding setup of all components in the Components list above
+    Parameters:  # parameters of optimization if applicable
+        MonitoringTechnology1:
+            nrms_threshold:  #
+        MonitoringTechnology2:
+            co2_threshold:   #
+            max_sensors: 5
+            max_wells:  2
+    Objective: TTD   # (or Cost, or Risk, or list if applicable)
+    Outputs:   # setup of what user wants to save/see as result of optimization
+        nproposals: 3
+    Plots:
+        OutputDirectory:
+# -----------------------------
+SensitivityAnalysis1:
+    InputData:
+        Type: Model
+        ModelName: Forward # or component name
+#       or
+        Type: File
+        FileDirectory: # Folder where setup file is located
+        SetupFilename: # name of file with setup data
+        TimePoints: # at which the data files are available; and needed to be used
+        Name: # data name if applicable
+    DataConfiguration: # associated with data
+        Type: Seismic (or Base)
+#          for seismic
+        Sources:
+            xyz: # e.g., file or list
+#           or separately
+            x:
+            y:
+            z:
+#           or separately
+            nx:
+            xmin:
+            xmax:
+            ny:
+            ymin:
+            ymax:
+            nz: 1 # default is 1 if not provided
+            zmin: # default is 0; if zmin=zmax, then nz=1
+            zmax:
+        Receivers:
+            xyz: # e.g., file or list
+#           or separately
+            x:
+            y:
+            z:
+        TotalDuration:
+        SamplingInterval:
+#       or
+        SampleTimePoints: # list or file name
+    Parameters:
+        # flag to control wether or not to plot sensitivity vs "data to collect" plots
+        dtc_flag: 1
+        # flag for yaml file output, set as 1 to use yaml format output, 0 for text file
+        output_yaml: 1
+        # Root directory path for output
+        outpre: ./output/
+        # User defined data to collect percentage
+        target_dtc: 5
+       #  User defined threshold of the total sensitivity threshold
+        sens_threshold: [0.2,0.8]
+        Thresholds: # Threshold values for sensitivity
+        ks: 4
+        kr: 4
+        # flag to control the normalization of the sensivity
+        sen_norm: 1
+        wavefield: ['P'] # or 'S', or both
+        # or different components of seismic sensitivity energy
+        components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs'],['P+S','Vp'],['P+S','Vs'],['P+S','Vp+Vs'],['P','Vp+Vs']]
+        #components: [['P','Vp'],['P','Vs'],['S','Vp'],['S','Vs']]
+    Plots:
+        # units used for model plot
+        units: {'vp': '(m/s)', 'vs': '(m/s)', 'density': '(kg/m$^3$)'}

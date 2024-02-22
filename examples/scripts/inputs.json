@@ -5,7 +5,7 @@
  "run_optimization": true,
  "plot_results": true,
  "data_case": 1,
- "scenarios": "1-30",
+ "scenarios": "1-50",
  "directory_seismic_data": "../../data/user/seismic",
  "directory_velocity_data": "../../data/user/velocity",
  "directory_nrms_data": "../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data",

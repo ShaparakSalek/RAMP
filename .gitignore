@@ -1,7 +1,15 @@
+*.h5
+*.npy
+*.npz
+*.png
 *.pyc
 *.stats
-*.png
-*.h5
+*.tar
+*.zip
+
+Thumbs.db
+.DS_Store
 
 documentation/user/build/*
 documentation/use_cases/build/*
+test/output/*
