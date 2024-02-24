@@ -125,7 +125,7 @@ class SeismicMonitoring(MonitoringTechnology):
                      source_ind=None, receiver_ind=None,
                      first_time_ind=0, num_time_samples=None):
         """
-        Calculate NRMS metric for all traces defined by provided indices of sources
+        Calculate NRMS-type metrics for all traces defined by provided indices of sources
         and receivers.
 
         Parameters
@@ -152,8 +152,12 @@ class SeismicMonitoring(MonitoringTechnology):
 
         Returns
         -------
-        Dictionary of outputs with keys being names of metrics calculated from
-        input data. Possible keys are 'NRMS', 'ave_NRMS', 'max_NRMS', 'min_NRMS'.
+        out : dict
+            Dictionary of outputs with keys being names of NRMS-type metrics
+            calculated from seismic input data and coordinates
+            of the associated sources and receivers. Possible keys are
+            'NRMS', 'ave_NRMS', 'max_NRMS', 'min_NRMS', 'source_xyz',
+            and 'receiver_xyz'.
 
         """
         if source_ind is not None or receiver_ind is not None:
@@ -177,12 +181,7 @@ class SeismicMonitoring(MonitoringTechnology):
         data_out = {'NRMS': nrms, 'ave_NRMS': ave_nrms,
                     'max_NRMS': max_nrms, 'min_NRMS': min_nrms}
 
-        time_index = np.where(self.time_points==time_point/365.25)[0][0]
-        if time_index == 0:
-            out = {**data_out, **self.coordinates}
-            return out
-        else:
-            return data_out
+        out = {**data_out, **self.coordinates}
 
         return out
 
@@ -225,6 +224,14 @@ def calculate_nrms(data, baseline, source_ind, receiver_ind, time_ind):
     return nrms
 
 def test_seismic_monitoring():
+    """
+    Test work of SeismicMonitoring class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10

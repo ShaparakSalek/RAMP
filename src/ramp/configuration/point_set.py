@@ -21,27 +21,34 @@ class PointSet():
     def __init__(self, name, xyz_coords=None, regular=False, point_class=Point,
                  **kwargs):
         """
+        Create an instance of PointSet class.
+
         Parameters
         ----------
-        xyz_coords : numpy.array of shape (npoints, 3)
-            Array of x, y, z coordinates of points to be added to the point set, optional
-            The default is None.
+        name : str
+            Name of PointSet instance to be created.
+        xyz_coords : numpy.array
+            Array of shape (npoints, 3) of x, y, z coordinates of points
+            to be added to the point set, optional. The default is None.
+            In the latter case arguments provided in the kwargs dictionary will be
+            used.
         regular : boolean, optional
             Flag indicating whether set created will be based on a regular grid.
-            The default is True.
-        point_class : class inherited from Point class
+            The default is False, i.e., a new PointSet instance is assumed to be
+            based on a non-regular grid.
+        point_class : Point class or class inherited from it
             Class to be used to create points in the point set
-        **kwargs : dictionary
-            Dictionary of optional keyword arguments allowing to create a point set with
+        **kwargs : additional keyword arguments
+            Optional keyword arguments allowing to create a point set with
             different options if argument xyz_coords is not provided (have value of None).
-            Possible options:
+            Possible keys:
                 'x', 'y', 'z' - np.array of shapes (nx, ), (ny, ), (nz, ).
                 In this case, the code will use numpy.meshgrid to create the points.
                 'x_min', 'x_max', 'nx', 'y_min', 'y_max', 'ny', 'z_min', 'z_max', 'nz'
                 - scalars providing extent of the domain in x, y, z direction and
                 number of points in x, y, and z-directions
                 'center', 'rx', 'ry', 'rz', 'nx', 'ny', 'nz' - produces cylinder
-                with base being a circle in xy-plane
+                with base being a circle in xy-plane (not yet implemented)
 
         Returns
         -------
@@ -74,6 +81,22 @@ class PointSet():
 
     @elements.setter
     def elements(self, new_points, point_class=None):
+        """
+        Sets _elements attribute of the class using provided arguments.
+
+        Parameters
+        ----------
+        new_points : numpy.array or list of instances of Point class
+            Coordinates of the points to be included in the set or list of instances
+            of Point class
+        point_class : Point class or class inherited from it
+            Class to be used to create points in the point set
+
+        Returns
+        -------
+        None.
+
+        """
         if type(new_points) is np.ndarray:  # numpy.array with coordinates
             self._elements = self.create_points_list(new_points, self.point_class)
         elif isinstance(new_points, list):  # list of points
@@ -85,6 +108,23 @@ class PointSet():
 
     @staticmethod
     def create_points_list(point_coords, point_class):
+        """
+        Create list of points from the provided arguments.
+
+        Parameters
+        ----------
+        point_coords : numpy.array
+            Array of shape (npoints, 3) describing x-, y-, z-coordinates
+            of points to be added to the list of points
+        point_class : Point class or class inherited from it
+            Class to be used to create points in the list
+
+        Returns
+        -------
+        points : list
+            List of instances of Point class
+
+        """
         points = []
         num_points = point_coords.shape[0]
         for ind in range(num_points):
@@ -103,8 +143,16 @@ class PointSet():
 
         Parameters
         ----------
-        **kwargs : TYPE
-            DESCRIPTION.
+        **kwargs : optional keyword arguments
+            Optional keyword arguments allowing to create a point set with
+            different options. Possible keys:
+            'x', 'y', 'z' - np.array of shapes (nx, ), (ny, ), (nz, ).
+            In this case, the code will use numpy.meshgrid to create the points.
+            'x_min', 'x_max', 'nx', 'y_min', 'y_max', 'ny', 'z_min', 'z_max', 'nz'
+            - scalars providing extent of the domain in x, y, z direction and
+            number of points in x, y, and z-directions
+            'center', 'rx', 'ry', 'rz', 'nx', 'ny', 'nz' - produces cylinder
+            with base being a circle in xy-plane (not yet implemented)
 
         Returns
         -------
@@ -134,11 +182,13 @@ class PointSet():
 
     def setup_meshgrid_coordinates(self, **kwargs):
         """
-        Setup coordinates of the points utilizing numpy meshgrid method.
+        Setup coordinates of the points within the given PointSet instance
+        utilizing numpy meshgrid method.
 
         Parameters
         ----------
-        **kwargs : TYPE
+        **kwargs : optional keyword arguments
+            Possible keys:
             'x', 'y', 'z' - np.array of shapes (nx, ), (ny, ), (nz, ).
             In this case, the code will use numpy.meshgrid to create the points.
 
@@ -168,12 +218,14 @@ class PointSet():
 
     def setup_linspace_coordinates(self, **kwargs):
         """
-        Setup coordinates of the points by creating x, y, z coordinates with
-        numpy linspace and then utilizing numpy meshgrid method
+        Setup coordinates of the points within the given PointSet instance
+        by creating x-, y-, z-coordinates with numpy linspace and numpy meshgrid
+        methods
 
         Parameters
         ----------
-        **kwargs : TYPE
+        **kwargs : optional keyword arguments
+            Possible keys:
             'x_min', 'x_max', 'nx', 'y_min', 'y_max', 'ny', 'z_min', 'z_max', 'nz'
             - scalars providing extent of the domain in x, y, z direction and
             number of points in x, y, and z-directions
@@ -196,8 +248,9 @@ class PointSet():
 
         Parameters
         ----------
-        xyz_coords : TYPE
-            DESCRIPTION.
+        xyz_coords : numpy.array
+            An array of shape (npoints, 3) providing x-, y-, and z-coordinates
+            for points within the given PointSet instance
 
         Returns
         -------
@@ -225,28 +278,37 @@ class PointSet():
 
     def create_point_set(self, name, indices=None, **kwargs):
         """
-        Create and return a point set with a subset of points from the original point set.
-        If an original point set is irregular, the returned point set might be degenerate
-        even though the original point set is not degenerate. Plotting the resulting
-        point set is recommended to check that the resulting point set is sufficient
-        for the intended application.
-        For a regular point set a selection of points based on indices for x, y, and z
-        is recommended. In this case additional arguments with kwargs need to be used.
-        Possible options:
+        Create and return a point set with a subset of points from the original
+        point set.
+
+        If an original point set is irregular, the returned point set might
+        be degenerate even though the original point set is not degenerate.
+        Plotting the resulting point set is recommended to check that
+        the resulting point set is sufficient for the intended application.
+
+        For a regular point set a selection of points based on indices
+        for x-, y-, and z-coordinates is recommended. In this case additional
+        arguments with kwargs dictionary need to be used.
+
+        Parameters
+        ----------
+        name : str
+            Name of a new instance of PointSet to be created.
+        indices : list
+            if indices are None the copy of the survey is returned. The points
+            of the new point set are copied as well.
+        kwargs : optional keyword arguments
+            Possible keys:
             'x_indices', 'y_indices', 'z_indices': list of indices for x, y, and
             z coordinates. This option can be used only for regular point set.
             In both cases attribute unique will be used to extract
             corresponding points.
 
-        Parameters
-        ----------
-        indices : list.
-            if indices are None the copy of the survey is returned. The points
-            of the new point set are copied as well.
-
         Returns
         -------
-        None.
+        new_point_set : PointSet
+            Instance of PointSet class with points being a subset of the provided
+            PointSet points.
 
         """
         if not kwargs:  # if dictionary of additional attributes is empty
@@ -284,9 +346,19 @@ class PointSet():
 
 def check_missing_keys(data_dict, required_keys):
     """
-    Check whether dictionary contains all required keys.
+    Check whether a dictionary contains all required keys.
 
-    Returns list of missing keys or empty list if all are present.
+    Parameters
+    ----------
+    data_dict: dict
+        Dictionary to be checked for the presence of keys of interest
+    required_keys : list
+        List containing keys of interest
+
+    Returns
+    -------
+    missing_keys : list
+        List of missing keys or empty list if all are present.
     """
     missing_keys = []
 
@@ -304,11 +376,14 @@ def raise_missing_keys_error(name, missing_keys):
 
     Parameters
     ----------
+    name : str
+        Name of PointSet instance for which error message is to be provided.
+    missing_keys : list
+        List of keys not present in the dictionary for which the check is made.
 
     Raises
     ------
     KeyError
-
 
     Returns
     -------

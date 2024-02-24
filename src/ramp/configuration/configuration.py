@@ -27,6 +27,8 @@ class BaseConfiguration():
     def __init__(self, sources=None, receivers=None, name='Unnamed',
                  sc_name='source', rc_name='receiver'):
         """
+        Create an instance of BaseConfiguration class.
+
         Parameters
         ----------
         sources : numpy.array of shape (nsources, 3)
@@ -45,7 +47,7 @@ class BaseConfiguration():
         Returns
         -------
         Instance of BaseConfiguration class containing information
-        about the configuration sources and receivers
+        about its sources and receivers.
         """
         # Set name attribute
         self.name = name
@@ -131,7 +133,7 @@ class BaseConfiguration():
     @staticmethod
     def create_point_set(name, point_coords, config, point_class):
         """
-        Create point set from the provided arguments.
+        Create point set using the provided arguments.
 
         Parameters
         ----------
@@ -147,8 +149,8 @@ class BaseConfiguration():
 
         Returns
         -------
-        point_set : Instance of PointSet class
-            Point set.
+        point_set : PointSet
+            Instance of PointSet class.
 
         """
         point_set = PointSet(name, point_coords, point_class=point_class)
@@ -220,6 +222,14 @@ class BaseConfiguration():
 
 
 def test_base_configuration1():
+    """
+    Test BaseConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of sources
     num_sources = 9
     sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
@@ -240,6 +250,14 @@ def test_base_configuration1():
 
 
 def test_base_configuration2():
+    """
+    Test BaseConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of receivers
     nx = 7
     ny = 12

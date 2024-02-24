@@ -75,7 +75,7 @@ class InSituMeasurements(MonitoringTechnology):
                  map_dim_index_2_point_index=None, criteria=1):
         """
         The InSituMeasurements class is designed to model monitoring well
-        simulation which can track pressure, TDS, pH, etc at a given location
+        which can track pressure, TDS, pH, etc at a given location
         and compare them to a threshold.
 
         Parameters
@@ -129,7 +129,7 @@ class InSituMeasurements(MonitoringTechnology):
         self.criteria = criteria
 
         # Setup attribute data_indices
-        self.get_indices(dim_indices=dim_indices)
+        self.get_dim_indices(dim_indices=dim_indices)
 
         # Setup index of the data point
         self.point_index = None  # not known until data is made available to the component
@@ -154,7 +154,25 @@ class InSituMeasurements(MonitoringTechnology):
         self.run_time_indices = get_indices(self._parent.time_array,
                                             self.time_points*365.25)
 
-    def get_indices(self, dim_indices=None):
+    def get_dim_indices(self, dim_indices=None):
+        """
+        Check type of the provided argument and setup data_indices attribute.
+
+        Parameters
+        ----------
+        dim_indices : int, tuple, optional
+            Dimension of the data structures linked to the component.
+
+        Raises
+        ------
+        TypeError
+            If the argument is of wrong type.
+
+        Returns
+        -------
+        None.
+
+        """
         if dim_indices is not None:
             if isinstance(dim_indices, (int, tuple)):
                 self.data_indices = dim_indices
@@ -163,6 +181,24 @@ class InSituMeasurements(MonitoringTechnology):
                 raise TypeError(err_msg)
 
     def get_coordinates(self, data_shape):
+        """
+        Transform multidimensional index of point into x-, y-, z-coordinates using index map.
+
+        Parameters
+        ----------
+        data_shape : tuple
+            Shape of data structure.
+
+        Raises
+        ------
+        ValueError
+            If obtained multidimensional index is not consistent with the shape of data
+
+        Returns
+        -------
+        None.
+
+        """
         if self.index_map is not None:
             # Get point index from dim_indices and data_shape
             self.point_index = self.index_map(self.data_indices, data_shape)
@@ -192,15 +228,19 @@ class InSituMeasurements(MonitoringTechnology):
             are to be calculated; by default, its value is 0 days
         data : numpy.ndarray
             Data to be processed
-        baseline : numpy.ndarray of the same shape as data
+        baseline : numpy.ndarray of the same shape as data argument
             Baseline data to be processed
-        dim_indices : int or list of int
-            Integer index of the data point if data is 1d and list of indices
-            for each dimension of data if data has 2 or more dimensions
+        dim_indices : int or tuple of int
+            Integer index of the data point if data is 1d and tuple of integer
+            indices for each dimension of data if data has 2 or more dimensions
 
         Returns
         -------
-        None.
+        out : dict
+            Dictionary containing results associated with processing
+            the in-situ measurements data. Possible keys:
+                'receiver_xyz', 'leak_detected_ts', 'detection_time_ts',
+                'leak_detected', 'detection_time'
 
         """
         # Obtain the default values of the parameters from dictionary of default parameters
@@ -210,7 +250,7 @@ class InSituMeasurements(MonitoringTechnology):
 
         # Check whether new indices were provided: if this is the case
         # attribute self.data_indices will be updated
-        self.get_indices(dim_indices=dim_indices)
+        self.get_dim_indices(dim_indices=dim_indices)
 
         # Initialize output dictionary
         out = {}
@@ -272,6 +312,14 @@ class InSituMeasurements(MonitoringTechnology):
 
 
 def test_in_situ_measurements():
+    """
+    Test work of InSituMeasurements class.
+
+    Returns
+    -------
+    None.
+
+    """
     import matplotlib.pyplot as plt
     from openiam import SystemModel
     from ramp.components.base import DataContainer

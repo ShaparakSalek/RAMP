@@ -47,7 +47,7 @@ def read_sens_from_segy(filename,sen_nor):
     """
     from obspy.io.segy.core import _read_segy
     st1 = _read_segy(filename)
-    sens2d_read=[]
+    sens2d_read = []
     for i, tr in enumerate(st1):
         sens2d_read.append(tr.data)
     sens = np.array(sens2d_read)

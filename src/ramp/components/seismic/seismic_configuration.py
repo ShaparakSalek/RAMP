@@ -20,15 +20,24 @@ class SeismicSurveyConfiguration(BaseConfiguration):
     def __init__(self, sources, receivers, name='Unnamed', create_arrays=False,
                  array_creator=None, array_creator_kwargs=None):
         """
+        SeismicSurveyConfiguration helps to describe the seismic survey configuration.
+
         Parameters
         ----------
         sources : numpy.array of shape (nsources, 3)
             Array of x, y, z coordinates of sources of a given seismic survey
         receivers : numpy.array of shape (nreceivers, 3)
             Array of x, y, z coordinates of sources of a given seismic survey
-
         name : string, optional
             Name of seismic survey
+        create_arrays : boolean, optional
+            Flag indicating whether arrays consisting of sources and receivers
+            of the given configuration are to be created; default is False
+        array_creator : method name, optional
+            Method to be used to create arrays of the configuration sources
+            and receivers; default is None
+        array_creator_kwargs : dict, optional
+            Dictionary containing arguments of the method defined in array_creator
 
         Returns
         -------
@@ -69,11 +78,11 @@ class SeismicSurveyConfiguration(BaseConfiguration):
 
         Parameters
         ----------
-        config_option : int
-            Value indicates what kind of array will be created.
-            Value of 0 corresponds to num_sources arrays where each source
-            is combined with all receivers.
-            Value of 1 corresponds to
+        array_creator : method name, optional
+            Method to be used to create arrays of the configuration sources
+            and receivers; default is None
+        array_creator_kwargs : dict, optional
+            Dictionary containing arguments of the method defined in array_creator
 
         Returns
         -------
@@ -89,6 +98,8 @@ class SeismicSurveyConfiguration(BaseConfiguration):
 
         Parameters
         ----------
+        name : string
+            Name of a new seismic survey configuration
         source_indices : list
             Indices of sources that will be used for new configuration.
         receiver_indices : list
@@ -121,9 +132,7 @@ class SeismicSurveyConfiguration(BaseConfiguration):
 def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
                              first_receiver_index=0):
     """
-    Create a dictionary of arrays with keys being indices of arrays starting with 0
-    and values being dictionary with keys 'source' and 'receivers'. 'source' is
-    index of the source; 'receivers' is list of receivers indices.
+    Create a dictionary of seismic arrays.
 
     Parameters
     ----------
@@ -135,9 +144,24 @@ def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
         Integer step between indices of consecutive receivers.
     first_receiver_index : int
         Index of the receiver to be used as first for each array.
+
     Returns
     -------
-    None.
+    num_arrays : int
+        Number of produced arrays
+    produced_arrays : dict
+        Dictionary containing information about created arrays. Possible keys are
+        integers from 0 to (num_arrays-1). Each key correspond to one of the
+        created arrays and is represented as a dictionary containing
+        the following information:
+        'source' : int
+            Index of source for a given array
+        'receivers' : list of int
+            List of receivers indices
+        'num_sources' : int
+            Number of sources in a given array. In this case, it's always 1.
+        'num_receivers' : int
+            Number of receivers in an given array
 
     """
     # Default values if no arrays are constructed
@@ -153,6 +177,7 @@ def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
                 produced_arrays[ind] = {
                     'source': ind,
                     'receivers': receiver_indices,
+                    'num_sources': 1,
                     'num_receivers': len(receiver_indices)}
 
             num_arrays = num_sources
@@ -172,15 +197,36 @@ def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
 
 def five_n_receivers_array_creator(source_coords=None, receiver_coords=None):
     """
-    Create a dictionary of arrays with keys being indices of arrays starting with 0
-    and values being dictionary with keys 'source' and 'receivers'. 'source' is
-    index of the source; 'receivers' is list of receivers indices.
+    Create a dictionary of arrays.
 
     Created arrays will have number of receivers in multiple of five.
 
+    Parameters
+    ----------
+    source_coords : numpy.ndarray
+        x, y, z coordinates of the sources. Shape of array is (ns, 3) where
+        ns - number of sources
+    receiver_coords : numpy.ndarray
+        x, y, z coordinates of the receivers. Shape of array is (nr, 3) where
+        nr - number of receivers
+
     Returns
     -------
-    None.
+    num_arrays : int
+        Number of produced arrays
+    produced_arrays : dict
+        Dictionary containing information about created arrays. Possible keys are
+        integers from 0 to (num_arrays-1). Each key correspond to one of the
+        created arrays and is represented as a dictionary containing
+        the following information:
+        'source' : int
+            Index of source for a given array
+        'receivers' : list of int
+            List of receivers indices
+        'num_sources' : int
+            Number of sources in a given array. In this case, it's always 1.
+        'num_receivers' : int
+            Number of receivers in an given array
 
     """
     # Default values if no arrays are constructed
@@ -244,6 +290,14 @@ def five_n_receivers_array_creator(source_coords=None, receiver_coords=None):
 
 
 def test_seismic_configuration1():
+    """
+    Test work of SeismicSurveyConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of sources
     num_sources = 9
     sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
@@ -264,6 +318,14 @@ def test_seismic_configuration1():
 
 
 def test_seismic_configuration2():
+    """
+    Test work of SeismicSurveyConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of sources
     num_sources = 9
     sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
@@ -305,6 +367,14 @@ def test_seismic_configuration2():
 
 
 def test_seismic_configuration3():
+    """
+    Test work of SeismicSurveyConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of sources
     num_sources = 9
     sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
@@ -359,6 +429,14 @@ def test_seismic_configuration3():
 
 
 def test_array_creator():
+    """
+    Test work of five_n_receivers_array_creator method.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define coordinates of sources
     num_sources = 9
     sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),

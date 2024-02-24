@@ -94,6 +94,28 @@ class PlumeEstimate(MonitoringTechnology):
         self.add_default_par('threshold', value=0.0)
 
     def process_coordinates(self, coordinates=None, data_shape=None):
+        """
+        Process x-, y-, z-coordinates provided as arguments to the class constructor.
+
+        Parameters
+        ----------
+        coordinates : dict
+            Coordinates associated with data. Possible keys: 1, 2, or 1, 2, 3
+            1 corresponds to coordinates for data in the first dimension
+            2 corresponds to coordinates for data in the second dimension
+            3 corresponds to coordinates for data in the third dimension, and so on.
+            For example, coordinates = {1: np.linspace(1, 11, num=4),
+                                        2: np.linspace(0, 100, num=11)}
+            If coordinates is None, then the coordinates are assumed to be indices
+            corresponding to the number of points in each dimension of data.
+        data_shape : tuple
+            Tuple representing size of data in each dimension
+
+        Returns
+        -------
+        None.
+
+        """
         if coordinates is None:
             if data_shape is not None:
                 self.num_dims = len(data_shape)
@@ -153,21 +175,23 @@ class PlumeEstimate(MonitoringTechnology):
 
         Returns
         -------
-        Dictionary of outputs. Possible keys:
-            plume: numpy.ndarray of the same shape as the original data
-            plume_size : number of points with data above the threshold multipled
-            by cell size
-            extent1, extent2, ... - maximum extent of the plume along each dimension
-            min1, min2, ... - minimum of coordinates along each dimension when
-            extent is positive, and if it's -999.0 then extent is zero
-            max1, max2, ... - maximum of coordinates along each dimension when
-            extent is positive, and if it's -999.0 then extent is zero.
-            min_ind1, min_ind2, ... - index of coordinates along each dimension
-            corresponding to the minimum of coordinates, and if it's -999
-            then extent is zero
-            max_ind1, max_ind2, ... - index of coordinates along each dimension
-            corresponding to the maximum of coordinates and if it's -999
-            then extent is zero
+        out : dict
+            Dictionary of outputs. Possible keys:
+                'plume': numpy.ndarray of the same shape as the original data
+                'plume_size': number of points with data above the threshold
+                multipled by cell size
+                'extent1', 'extent2', ... - maximum extent of the plume along
+                each dimension
+                'min1', 'min2', ... - minimum of coordinates along each dimension
+                when extent is positive, and if it's -999.0 then extent is zero
+                'max1', 'max2', ... - maximum of coordinates along each dimension
+                when extent is positive, and if it's -999.0 then extent is zero.
+                'min_ind1', 'min_ind2', ... - index of coordinates along each
+                dimension corresponding to the minimum of coordinates, and
+                if it's -999 then extent is zero
+                'max_ind1', 'max_ind2', ... - index of coordinates along each
+                dimension corresponding to the maximum of coordinates, and
+                if it's -999 then extent is zero
 
         """
         # Obtain the default values of the parameters from dictionary of default parameters
@@ -212,11 +236,48 @@ class PlumeEstimate(MonitoringTechnology):
         return out
 
     def setup_data_for_clustering_analysis(self, where_plume_is_one_indices):
-        coords = [self.grid[ind][where_plume_is_one_indices] for ind in range(self.num_dims)]
+        """
+        Get coordinates of points where data has the values of interest.
+
+        For PlumeEstimate class the processed data has value of 1 at points
+        where the plume or associated data is above a certain threshold.
+
+        Parameters
+        ----------
+        where_plume_is_one_indices : TYPE
+            Multidimensional indices of points with data exceeding
+
+        Returns
+        -------
+        data : TYPE
+            DESCRIPTION.
+
+        """
+        coords = [self.grid[ind][where_plume_is_one_indices] \
+                  for ind in range(self.num_dims)]
         data = np.vstack(coords).T
         return data
 
     def present_plume_output(self, where_plume_is_one_indices):
+        """
+        Setup dictionary of outputs if plume is detected.
+
+        The method analyzes the data coordinates at which it's above a certain
+        threshold and combine them into clusters. Then analyzes each cluster to
+        produce extents, indices of min, max coordinates as well as coordinates
+        themselves.
+
+        Parameters
+        ----------
+        where_plume_is_one_indices : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        out : dict
+            Dictionary of outputs if plume is detected.
+
+        """
         cluster_data = self.setup_data_for_clustering_analysis(where_plume_is_one_indices)
         # Split points into clusters
         results = DBSCAN(eps=self.max_distance, min_samples=3).fit(cluster_data)
@@ -272,6 +333,15 @@ class PlumeEstimate(MonitoringTechnology):
         return out
 
     def no_plume_output(self):
+        """
+        Setup dictionary of outputs if no plume is detected.
+
+        Returns
+        -------
+        out : dict
+            Dictionary of outputs if no plume is detected.
+
+        """
         out = {}
         out['num_plumes'] = 0
         out['plume_size'] = np.zeros(self.max_num_plumes)
@@ -286,6 +356,44 @@ class PlumeEstimate(MonitoringTechnology):
 
 def plume_scatter_plot(xxs, zzs, data, xlabel, ylabel, title, colorbar_label,
                        vmin, vmax, cmap='viridis', marker='s', labelsize=14):
+    """
+    Create figure with a single subplot showing plume corresponding to the selected data.
+
+    Parameters
+    ----------
+    xxs : TYPE
+        DESCRIPTION.
+    zzs : TYPE
+        DESCRIPTION.
+    data : TYPE
+        DESCRIPTION.
+    xlabel : TYPE
+        DESCRIPTION.
+    ylabel : TYPE
+        DESCRIPTION.
+    title : TYPE
+        DESCRIPTION.
+    colorbar_label : TYPE
+        DESCRIPTION.
+    vmin : TYPE
+        DESCRIPTION.
+    vmax : TYPE
+        DESCRIPTION.
+    cmap : TYPE, optional
+        DESCRIPTION. The default is 'viridis'.
+    marker : TYPE, optional
+        DESCRIPTION. The default is 's'.
+    labelsize : TYPE, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    fig : TYPE
+        DESCRIPTION.
+    ax : TYPE
+        DESCRIPTION.
+
+    """
     fig = plt.figure(figsize=(12, 7))
     ax = fig.add_subplot(111)
 
@@ -305,7 +413,46 @@ def plume_scatter_plot(xxs, zzs, data, xlabel, ylabel, title, colorbar_label,
 
 
 def plume_scatter_4x5_plot(xxs, zzs, data, xlabel, ylabel, title, colorbar_label,
-                           vmin=None, vmax=None, cmap='viridis', marker='s', labelsize=14):
+                           vmin=None, vmax=None, cmap='viridis', marker='s',
+                           labelsize=14):
+    """
+    Create figure with multiple subplots showing plume evolution for the selected data.
+
+    Parameters
+    ----------
+    xxs : TYPE
+        DESCRIPTION.
+    zzs : TYPE
+        DESCRIPTION.
+    data : TYPE
+        DESCRIPTION.
+    xlabel : TYPE
+        DESCRIPTION.
+    ylabel : TYPE
+        DESCRIPTION.
+    title : TYPE
+        DESCRIPTION.
+    colorbar_label : TYPE
+        DESCRIPTION.
+    vmin : TYPE, optional
+        DESCRIPTION. The default is None.
+    vmax : TYPE, optional
+        DESCRIPTION. The default is None.
+    cmap : TYPE, optional
+        DESCRIPTION. The default is 'viridis'.
+    marker : TYPE, optional
+        DESCRIPTION. The default is 's'.
+    labelsize : TYPE, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    fig : TYPE
+        DESCRIPTION.
+    axs : TYPE
+        DESCRIPTION.
+
+    """
     if vmin is None and vmax is None:
             vmin = np.min(data)
             vmax = np.max(data)
@@ -333,6 +480,14 @@ def plume_scatter_4x5_plot(xxs, zzs, data, xlabel, ylabel, title, colorbar_label
 
 
 def test_plume_estimate():
+    """
+    Test work of PlumeEstimate class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define keyword arguments of the system model
     final_year = 200
     num_intervals = (final_year-10)//10

@@ -11,6 +11,7 @@ import h5py
 
 def default_h5_file_reader(file_name, time_index=0, obs_name='pressure'):
     """
+    Read data from provided *.h5 file.
 
     Parameters
     ----------

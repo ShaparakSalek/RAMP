@@ -75,7 +75,7 @@ def write_optimal_design_to_yaml(design2,yaml_output_path):
 
     Returns:
         None. Writes the optimal design configuration to a YAML file.
-"""
+    """
     # Convert design2 to dictionary format
     design2_dict = {}
     for i in range(0, len(design2), 2):

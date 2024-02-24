@@ -11,6 +11,7 @@ import numpy as np
 def default_bin_file_reader(file_name, data_shape=None, r_order='F',
                             move_axis_destination=None):
     """
+    Read data from provided *.bin file.
 
     Parameters
     ----------

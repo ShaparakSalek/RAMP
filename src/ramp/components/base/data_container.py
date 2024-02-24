@@ -22,9 +22,6 @@ from ramp.utilities.data_readers import default_bin_file_reader
 
 
 class DataContainer(ComponentModel):
-    """
-    Component of RAMP tool providing means to load user data into simulations.
-    """
     def __init__(self, name, parent, family, obs_name, data_directory='',
                  data_setup=None, time_points=None, baseline=False,
                  data_reader=None, data_reader_kwargs=None,
@@ -32,6 +29,8 @@ class DataContainer(ComponentModel):
                  container_class='DataContainer',
                  model_kwargs=None, presetup=False):
         """
+        Component of RAMP tool providing means to load user data into simulations.
+
         Parameters
         ----------
         name : str
@@ -190,7 +189,16 @@ class DataContainer(ComponentModel):
 
         Returns
         -------
-        None.
+        None
+
+        Raises
+        ------
+        FileNotFoundError
+            If one of the files which name is specified in data_setup file
+            or dictionary does not exist
+        TypeError
+            If provided argument data_setup is neither of string nor
+            of dictionary type
 
         """
         if isinstance(data_setup, dict):  # dictionary containing setup
@@ -219,22 +227,31 @@ class DataContainer(ComponentModel):
         Parameters
         ----------
         data : dict
-            Dictionary with index type keys providing setup of multiple data files associated with
-            the given data set if of type dict. The keys are integers corresponding
-            to indices of particular simulation. The values are dictionaries with
-            the following keys
-                'signature': dict, optional, can contain information about parameters
-                that can be sampled
-                'folder': str, optional, path to a specific folder if data files for different
-                simulations are kept in separate folders. key is optional if
-                subsequent keys containing paths also contain information about folders.
-                't1', ..., 'tn' - keys corresponding to data at different time
-                points. n is a number of time points provided with time_points
-                argument.
+            Dictionary with index type keys providing setup of multiple data files
+            associated with the given data set if of type dict. The keys are
+            integers corresponding to indices of particular simulation.
+            The values are dictionaries with the following keys
+                'signature' : dict, optional
+                    Dictionary that can contain information about parameters
+                    that can be sampled
+                'folder' : str, optional
+                    Path to a specific folder if data files for different
+                    simulations are kept in separate folders. key is optional if
+                    subsequent keys containing paths also contain information
+                    about folders.
+                't1', ..., 'tn' : str
+                    Keys corresponding to data file names at different time
+                    points. n is a number of time points provided with time_points
+                    argument.
 
         Returns
         -------
-        None.
+        None
+
+        Raises
+        ------
+        ValueError
+            If one of the keys within data dictionary has an unexpected name
 
         """
         # Get keys and save them into indices attribute
@@ -282,13 +299,15 @@ class DataContainer(ComponentModel):
 
         Parameters
         ----------
-        data : str
+        data_setup_file : str
             Path to the csv file providing setup of multiple data files
             associated with the given data set.
 
         Returns
         -------
-        Dictionary needed for the data setup attribute of component .
+        setup_data : dict
+            Dictionary needed for the data setup attribute of component.
+
         """
         # Read file content
         df = pd.read_csv(data_setup_file, delimiter=',')
@@ -335,7 +354,13 @@ class DataContainer(ComponentModel):
         Parameters
         ----------
         p : dict
-            DESCRIPTION.
+            Dictionary of input parameters for a given DataContainer instance.
+
+        Raises
+        ------
+        ValueError
+            If index parameter is not in the instance indices attribute.
+
         """
         if 'index' in p:
             index = p['index']
@@ -355,12 +380,13 @@ class DataContainer(ComponentModel):
         ----------
         p : dict
             Parameters and values associated with data to be returned.
-        time_point : float
+        time_point : float, optional
             Time point at which data is to be returned.
 
         Returns
         -------
-        Dictionary of outputs with keys being names of data extracted from files.
+        out : dict
+            Dictionary of outputs with keys being names of data extracted from files.
 
         """
         # TODO Check/make sure that data returned by any data container
@@ -477,6 +503,10 @@ class DataContainer(ComponentModel):
             dictionary with titles corresponding to different keys in data
             dictionary
 
+        Returns
+        -------
+        None
+
         """
         if data is None:
             # Get data first
@@ -515,13 +545,14 @@ def get_indices(complete_array, sub_array):
     Parameters
     ----------
     complete_array : numpy.array
-        DESCRIPTION.
-    sub_array :
-        DESCRIPTION.
+        Array whose elements are assumed to be arranged in increasing order
+    sub_array : numpy.array
+        Array whose elements might be the same as some elements within the complete_array
 
     Returns
     -------
-    None.
+    indices : list
+        List of index positions of sub_array elements within the complete_array.
 
     """
     # Find the largest value of complete array
@@ -551,9 +582,15 @@ def process_time_points(time_points, data_directory=None,
         Name of component class instance for which the the time points
         processing is being done
 
+    Raises
+    ------
+    ValueError if time_points argument is None
+    FileNotFoundError
+
     Returns
     -------
-    None.
+    time_points : numpy.ndarray
+        Array of time points read from a file or originally provided array.
 
     """
     if time_points is None:
@@ -583,6 +620,14 @@ def process_time_points(time_points, data_directory=None,
 
 
 def test_data_container():
+    """
+    Test work of DataContainer in a simple scenario.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10

@@ -109,7 +109,11 @@ class SeismicEvaluation(MonitoringTechnology):
 
         Returns
         -------
-        Dictionary of outputs.
+        out : dict
+            Dictionary containing results associated with processing
+            the metric data. Possible keys:
+                'leak_detected_ts', 'detection_time_ts',
+                'leak_detected', 'detection_time'
 
         """
         # Obtain the default values of the parameters from dictionary of default parameters
@@ -165,6 +169,14 @@ class SeismicEvaluation(MonitoringTechnology):
 
 
 def test_seismic_evaluation():
+    """
+    Test work of SeismicEvaluation class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10

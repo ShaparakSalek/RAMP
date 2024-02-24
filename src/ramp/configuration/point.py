@@ -48,7 +48,7 @@ class Point():
 
     def __repr__(self):
         """
-        Return string representation of point.
+        Return string representation of Point instance.
 
         Returns
         -------
@@ -74,15 +74,15 @@ class Point():
 
         Parameters
         ----------
-        **kwargs - dictionary of optional keys specifying how the location
-        of the point changes. Optional keys:
-
-        dx : int or float, optional
-            offset in x-direction. The default is 0.
-        dy : int or float, optional
-            offset in y-direction. The default is 0.
-        dz : int or float, optional
-            offset in z-direction. The default is 0.
+        kwargs : optional keyword arguments
+            Optional keyword arguments specifying how the location of the point
+            changes. Possible keys:
+            dx : int or float, optional
+                offset in x-direction. The default is 0.
+            dy : int or float, optional
+                offset in y-direction. The default is 0.
+            dz : int or float, optional
+                offset in z-direction. The default is 0.
 
         Returns
         -------

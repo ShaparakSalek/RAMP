@@ -32,7 +32,7 @@ class SeismicDataContainer(DataContainer):
                  container_class='SeismicDataContainer',
                  presetup=False):
         """
-        Constructor of SeismicDataContainer class
+        Constructor of SeismicDataContainer class.
 
         Parameters
         ----------
@@ -138,6 +138,23 @@ class SeismicDataContainer(DataContainer):
         self.add_obs_to_be_linked('receiver_xyz', obs_type='grid')
 
     def check_data_shape(self, data, name):
+        """
+        Check whether shape of the data linked to the container is consistent
+        with the structure of linked seismic survey configuration.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            Data read from the linked data files and returned as output of the
+            class.
+        name : str
+            Observation name of data extracted from data files.
+
+        Returns
+        -------
+        None.
+
+        """
         d_shape = data.shape
         if d_shape[0] != self.num_sources or d_shape[1] != self.num_receivers or\
                 d_shape[2] != self.num_time_samples:
@@ -161,22 +178,29 @@ class SeismicDataContainer(DataContainer):
 
         Returns
         -------
-        Dictionary of outputs with keys being names of data extracted from files.
+        out : dict
+            Dictionary of outputs with keys being names of data extracted from files
+            and coordinates of the associated sources and receivers. The keys
+            associated with the last two outputs are 'source_xyz' and 'receiver_xyz'.
 
         """
         data_out = super().export(p, time_point)
         for key in data_out:
             self.check_data_shape(data_out[key], key)
 
-        time_index = np.where(self.time_points==time_point/365.25)[0][0]
-        if time_index == 0:
-            out = {**data_out, **self.coordinates}
-            return out
-        else:
-            return data_out
+        out = {**data_out, **self.coordinates}
+        return out
 
 
 def test_seismic_data_container():
+    """
+    Test work of SeismicDataContainer class.
+
+    Returns
+    -------
+    None.
+
+    """
     # Define keyword arguments of the system model
     final_year = 90
     num_intervals = (final_year-10)//10

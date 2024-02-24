@@ -22,14 +22,16 @@ def distance_based_argsort(point, points):
 
     Parameters
     ----------
-    point : array-like
-        DESCRIPTION.
-    points : TYPE
-        DESCRIPTION.
+    point : numpy.ndarray
+        Array of a single point coordinates
+    points : numpy.ndarray
+        Array of multiple points coordinates for which the distance from a point
+        is to be calculated
 
     Returns
     -------
-    None.
+    indices : numpy.ndarray
+        Array of indices sorting the distance
 
     """
     # Reshape point just in case
@@ -46,6 +48,28 @@ def distance_based_argsort(point, points):
 
 
 def get_multiple_measurements(dim_indices, data=None, baseline=None, criteria=1):
+    """
+    Process data based on the provided criteria.
+
+    Parameters
+    ----------
+    dim_indices : int or tuple
+        Indes or indices of the data structure at which data is to be extracted.
+    data : numpy.ndarray, optional
+        Data provided for processing. The default is None.
+    baseline : numpy.ndarray, optional
+        Data provided for processing. The default is None.
+    criteria : int, optional
+        Criteria according to which the provided data will be processed.
+        The default is 1.
+
+    Returns
+    -------
+    comp_data : numpy.ndarray or None
+        Array- or matrix-like data obtained from the provided data
+
+    """
+    comp_data = None
 
     # if data is provided
     if data is not None:
@@ -133,7 +157,7 @@ class GravityMeasurements(MonitoringTechnology):
         self.criteria = criteria
 
         # Setup attribute data_indices
-        self.get_indices(dim_indices=dim_indices)
+        self.get_dim_indices(dim_indices=dim_indices)
 
         # Save number of neighbors to look at
         self.num_neighbors = num_neighbors
@@ -161,7 +185,25 @@ class GravityMeasurements(MonitoringTechnology):
         self.run_time_indices = get_indices(self._parent.time_array,
                                             self.time_points*365.25)
 
-    def get_indices(self, dim_indices=None):
+    def get_dim_indices(self, dim_indices=None):
+        """
+        Check type of the provided argument and setup data_indices attribute.
+
+        Parameters
+        ----------
+        dim_indices : int, tuple, optional
+            Dimension of the data structures linked to the component.
+
+        Raises
+        ------
+        TypeError
+            If the argument is of wrong type.
+
+        Returns
+        -------
+        None.
+
+        """
         if dim_indices is not None:
             if isinstance(dim_indices, (int, tuple)):
                 self.data_indices = dim_indices
@@ -170,6 +212,24 @@ class GravityMeasurements(MonitoringTechnology):
                 raise TypeError(err_msg)
 
     def get_coordinates(self, data_shape):
+        """
+        Transform multidimensional index of point into x-, y-, z-coordinates using index map.
+
+        Parameters
+        ----------
+        data_shape : tuple
+            Shape of data structure.
+
+        Raises
+        ------
+        ValueError
+            If obtained multidimensional index is not consistent with the shape of data
+
+        Returns
+        -------
+        None.
+
+        """
         if self.index_map is not None:
             # Get point index from dim_indices and data_shape
             self.point_index = self.index_map(self.data_indices, data_shape)
@@ -187,8 +247,15 @@ class GravityMeasurements(MonitoringTechnology):
 
     def find_neighbors_indices(self, data_shape):
         """
+        Find tuple indices of n closest data points.
+
         Find tuple indices of n closest data points where n is number of neighbors
         to consider.
+
+        Parameters
+        ----------
+        data_shape : tuple
+            Shape of data structure.
 
         Returns
         -------
@@ -210,6 +277,17 @@ class GravityMeasurements(MonitoringTechnology):
             neighbors_flat_indices, data_shape)
 
     def combine_indices(self):
+        """
+        Collect (possibly multidimensional) indices of points at which data
+        is to be processed.
+
+        Returns
+        -------
+        combined_indices : tuple
+            (Possibly multidimensional) indices of points at which data
+            is to be processed.
+
+        """
         # Add data point indices to the end of the neighbor point indices
         if isinstance(self.data_indices, int):
             combined_indices = (np.append(self.neighbors_indices, self.data_indices),)
@@ -236,13 +314,16 @@ class GravityMeasurements(MonitoringTechnology):
             Data to be processed
         baseline : numpy.ndarray of the same shape as data
             Baseline data to be processed
-        dim_indices : int or list of int
-            Integer index of the data point if data is 1d and list of indices
-            for each dimension of data if data has 2 or more dimensions
+        dim_indices : int or tuple of int
+            Integer index of the data point if data is 1d and tuple of integer
+            indices for each dimension of data if data has 2 or more dimensions
 
         Returns
         -------
-        None.
+        out : dict
+            Dictionary containing results associated with processing the gravity data.
+            Possible keys:
+
 
         """
         # Obtain the default values of the parameters from dictionary of default parameters
@@ -252,7 +333,7 @@ class GravityMeasurements(MonitoringTechnology):
 
         # Check whether new indices were provided: if this is the case
         # attribute self.data_indices will be updated
-        self.get_indices(dim_indices=dim_indices)
+        self.get_dim_indices(dim_indices=dim_indices)
 
         # Initialize output dictionary
         out = {}
@@ -316,6 +397,14 @@ class GravityMeasurements(MonitoringTechnology):
 
 
 def test_gravity_measurements():
+    """
+    Test work of GravityMeasurements class.
+
+    Returns
+    -------
+    None.
+
+    """
     import matplotlib.pyplot as plt
     from openiam import SystemModel
     from ramp.components.base import DataContainer
