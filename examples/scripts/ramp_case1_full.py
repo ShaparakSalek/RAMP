@@ -114,9 +114,7 @@ except:
                 os.makedirs(output_directory)
         shutil.copyfile(sys.argv[1], output_directory + '/inputs.yaml')
     except: ValueError
-print('ooooooooooo')
-print(sys.argv[1])
-print('ooooooooooo')
+
 # ====================================
 # =========== Setup Step =============
 # ====================================
