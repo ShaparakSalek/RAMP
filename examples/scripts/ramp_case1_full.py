@@ -104,14 +104,14 @@ try:
     inputs = json.load(open(sys.argv[1], 'r'))
     output_directory = inputs['directory_nrms_data']
     if not os.path.exists(output_directory):
-            os.mkdir(output_directory)
+            os.makedirs(output_directory)
     shutil.copyfile(sys.argv[1], output_directory + '/inputs.json')
 except:
     try:
         inputs = yaml.safe_load(open(sys.argv[1], 'r'))
         output_directory = inputs['directory_nrms_data']
         if not os.path.exists(output_directory):
-                os.mkdir(output_directory)
+                os.makedirs(output_directory)
         shutil.copyfile(sys.argv[1], output_directory + '/inputs.yaml')
     except: ValueError
 print('ooooooooooo')
