@@ -102,9 +102,17 @@ Example:
 
 try:
     inputs = json.load(open(sys.argv[1], 'r'))
+    output_directory = inputs['directory_nrms_data']
+    if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+    shutil.copyfile(sys.argv[1], output_directory + '/inputs.json')
 except:
     try:
         inputs = yaml.safe_load(open(sys.argv[1], 'r'))
+        output_directory = inputs['directory_nrms_data']
+        if not os.path.exists(output_directory):
+                os.makedirs(output_directory)
+        shutil.copyfile(sys.argv[1], output_directory + '/inputs.yaml')
     except: ValueError
 
 # ====================================
@@ -309,7 +317,7 @@ if __name__ == "__main__":
                         folder_to_extract = os.sep.join([output_directory,
                                                          base_name.format(scen_ind)])
                         try:
-                            os.mkdir(folder_to_extract)
+                            os.makedirs(folder_to_extract)
                             zip_ref.extractall(folder_to_extract)
                         except FileExistsError:
                             pass
@@ -389,7 +397,7 @@ if __name__ == "__main__":
                         folder_to_extract = os.sep.join([output_directory,
                                                          base_name.format(scen_ind)])
                         try:
-                            os.mkdir(folder_to_extract)
+                            os.makedirs(folder_to_extract)
                             zip_ref.extractall(folder_to_extract)
                         except FileExistsError:
                             pass
@@ -427,7 +435,7 @@ if __name__ == "__main__":
             data_directory = inputs['directory_seismic_data']
             output_directory = inputs['directory_nrms_data']
             if not os.path.exists(output_directory):
-                os.mkdir(output_directory)
+                os.makedirs(output_directory)
             data_reader = default_bin_file_reader
             data_reader_kwargs = {'data_shape': (1251, 101, 9),
                                 'move_axis_destination': [-1, -2, -3]}
@@ -608,7 +616,7 @@ if __name__ == "__main__":
         output_directory = inputs['directory_nrms_data']
 
         if not os.path.exists(output_directory):
-            os.mkdir(output_directory)
+            os.makedirs(output_directory)
 
         # Create survey configuration with defined coordinates
         array_creator_kwargs = {'source_coords': sources,
@@ -789,12 +797,20 @@ if __name__ == "__main__":
         plans = {'stage1': [plans1, plans2, plans3],
                  'stage2':[plans4,plans5,plans6],
                  'stage3':[plans7,plans8,plans9] }
+        # Store in current directory
         json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
                   open('output.json','w'),indent=4)
         yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
                   open('output.yaml','w'))
         pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
                     open('output.dat', 'wb'))
+        # Store in output folder
+        json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
+                  open(output_directory + '/output.json','w'),indent=4)
+        yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
+                  open(output_directory + '/output.yaml','w'))
+        pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':configuration.arrays, 'plans':plans},
+                    open(output_directory + '/output.dat', 'wb'))
 
         arrays_selected = []
         plans_selected = {}
@@ -849,17 +865,24 @@ if __name__ == "__main__":
 
         print('plans_selected', plans_selected)
 
+        # Save to local directory
         json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                   open('output_summary.json','w'))
         yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                   open('output_summary.yaml','w'))
         pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
                     open('output_summary.dat','wb'))
-
+        # Save to output folder
+        json.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
+                  open(output_directory + '/output_summary.json','w'))
+        yaml.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
+                  open(output_directory + '/output_summary.yaml','w'))
+        pickle.dump({'time_days':time_dict,'sourceLocation_meters':sources_dict,'receiverLocation_meters':receivers_dict,'arrays':arrays_summary, 'plans':plans_selected},
+                    open(output_directory + '/output_summary.dat','wb'))
 
     if inputs['plot_results']:
 
-        output = json.load(open('output.json', 'r'))
+        output = json.load(open(output_directory + '/output.json', 'r'))
         plans1 = output['plans']['stage1'][0]
         plans2 = output['plans']['stage1'][1]
         plans3 = output['plans']['stage1'][2]
