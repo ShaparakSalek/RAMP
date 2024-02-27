@@ -59,7 +59,7 @@
 
  # as an alternative specify the minimum, maximum or range of number of receivers here
  # specify the minimum or maximum in quotes, ie "<15", ">=40"
- # or specify a range in brackets [0-40]
+ # or specify a range in brackets [0,40]
  #"number_receivers":"<=20",
  "number_receivers":[5,15],
 
