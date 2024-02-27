@@ -1,0 +1,98 @@
+{
+ # login to EDX and go to your account to find your edx api key
+ # take care not to share that key broadly
+ "edx_api_key": "your-api-key-here",
+
+ # defines whether or not to download the necessary datasets from EDX
+ # in most cases, set this value to true only on the first run
+ # no quotes necessary, just the word true or false
+ "download_data": false,
+
+ # defines whether or not to run the optimization
+ "run_optimization": true,
+
+ # defines whether or not to generate output images
+ "plot_results": false,
+
+ # leave this equal to 1
+ "data_case": 1,
+
+ # define the list of scenarios to include the optimization
+ # this can be in the form of a range, in quotes, "100-200"
+ # or can be simply a list of specific scenarios, [1,2,3,4,5,6,7,8,9]
+ "scenarios": "1-400",
+
+ # specifies the directory where seismic data will be stored
+ "directory_seismic_data": "../../data/user/seismic",
+
+ # specifies the directory where velocity data will be stored
+ "directory_velocity_data": "../../data/user/velocity",
+
+ # specifies the directory where nrms data will be stored
+ "directory_nrms_data": "../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data",
+
+ # specifies the directory where output images will be stored
+ "directory_plots": "../../examples/user/output/ramp_sys_seismic_monitoring_optimization_data",
+
+ # specifies the directory where pressure, saturation, gravity etc data will be stored
+ "directory_simulation_data": "../../examples/user/pressure",
+
+ "directory_output_files": "./moderate_arrays",
+
+ # specifies the list of potential source locations
+ # if locations are specified here as a list, the list is used
+ "sources": [4240, 4680, 5120, 5600, 6040, 6480, 6920, 7400, 7840],
+
+ # if "sources" is not specified, evenly spaced intervals are computed ranging from sourceMin to sourceMax
+ "sourceNum": 9,
+ "sourceMin": 4240,
+ "sourceMax": 7840,
+
+ # this entry is where we would define as a list, however it appears to cause an error
+ #"receivers": [4000,4050,4100,4200,4600,4800,5000,6000,7000,8000],
+
+ # instead, specify receiversNum evenly spaced intervals from receiversMin to receiversMax
+ # probably leave these values as they are, changing them seems to also cause an error
+ "receiversNum": 101,
+ "receiversMin": 4000,
+ "receiversMax": 8000,
+
+ # as an alternative specify the minimum, maximum or range of number of receivers here
+ # specify the minimum or maximum in quotes, ie "<15", ">=40"
+ # or specify a range in brackets [0-40]
+ #"number_receivers":"<=20",
+ "number_receivers":[15,25],
+
+ "seismic_total_duration": 2.5,
+ "seismic_sampling_interval": 0.002,
+
+ # define the minimum value of NRMS to signify a seismic detection
+ "threshold_nrms": 20,
+
+ # define the minimum value of CO2 to signify a detection
+ "threshold_co2": 1.5,
+
+ # define the maximum number of seismic arrays to include in the monitoring plan
+ "max_arrays": 3,
+
+ # define the maximum number of point sensors to include in the monitoring plan
+ "max_sensors": 5,
+
+ # define the maximum number of wells to include in the monitoring plan
+ "max_wells": 0,
+
+ # specify the maximum number of proposals to include in the summary files
+ "number_proposals": 3,
+
+ # define any fixed or already-existing wells to include in the monitoring plan
+ # use the word "none" in quotes if there are no pre-existing wells
+ # or specify wells using 4 comma-separated values,
+ # ijk or xyz to specify which coordinate system you are using
+ # then the three dimensions indicating the easting, northing and depth of the well
+ # if there are more than one well, separate them with semicolons ;
+ #"fixed_wells": "xyz,5500,2250,800;xyz,6000,2750,1000",
+ "fixed_wells": "none",
+
+ # specify how often to re-evaluate the monitoring plan based on new information
+ "stages": "0",
+}
