@@ -1,13 +1,15 @@
 DownloadData:
     Run: False
-    EDXAPIKey:  # in quotes or without
+    EDXAPIKey: ''      # in quotes
     WorkspaceID: 'nrap-task-4-monitoring'
-    DataFolderID:
-    OutputDirectory: # where to place the data; default and recommended is data/user/whatever
-    Instructions:  # applicable to each data set case
+    DataFolderID: ''   # in quotes
+    OutputDirectory:  # where to place the data; default and recommended is data/user/folder_nm
+    Instructions:     # applicable to each data set case
         Unzip: True
         DeleteArchive: True
-        # Scenarios: 1-100, 123
+        FileNameTemplate: None   # None or in quotes, e.g., 'data_sim{:04}.zip'
+        Indices: None    # None or in quotes, e.g., '1-100, 123'
+        ToExclude: None  # None or in quotes, e.g., '10, 11'
 # -----------------------------
 ModelParams:
     StartTime: 0
@@ -15,10 +17,12 @@ ModelParams:
     TimeStep: 5
 #   or only
     TimePoints:
-    OutputDirectory: ''
+    OutputDataDirectory: ''
+    OutputPlotsDirectory: ''
     Logging: Debug # for future
 # -----------------------------
 Workflow:
+    Run: False
     Type: Evaluation # (or Optimization, or SensitivityAnalysis, or VOIAnalysis)
     Setup: EvaluationSetup1  # name is arbitrary but has to be present below in the setup
 #   or
@@ -43,8 +47,8 @@ MonitoringTechnology1:
         SetupFilename: # name of file with setup data
         TimePoints: # at which the data files are available, provided as list or as a file
         Name: # data name if applicable, default is 'data';
-        Baseline: True # (if the first time point is baseline or to be used as baseline)
-        FileReader:
+        Baseline: True # (if the first time point in the TimePoints list is baseline or to be used as baseline)
+        FileReader:  # will be removed possibly in the future once we standardize the input formats
             Name: default
             Parameters:
     DataConfiguration: # associated with data
@@ -72,7 +76,8 @@ MonitoringTechnology1:
     Parameters:
         index: # standard setup of parameters, like in OpenIAM
         threshold: # for NRMS if seismic or for pressure if InSitu or for gravity if Gravity
-        criteria: # might depend on whether
+        criteria: # might depend on whether a particular monitoring technology component
+        # need this parameter and process data differently depending on its value
     Outputs: [DetectionTime, LeakDetected, ProbLeakDetected, NRMS, Data] # might not be needed if setup for Optimization
     # for multiple scenarios it can be probability of leak detected
     # We can also simplify optimization if we add to outputs an option to create
@@ -181,7 +186,7 @@ SensitivityAnalysis1:
 #       or
         SampleTimePoints: # list or file name
     Parameters:
-        # flag to control wether or not to plot sensitivity vs "data to collect" plots
+        # flag to control whether or not to plot sensitivity vs "data to collect" plots
         dtc_flag: 1
         # flag for yaml file output, set as 1 to use yaml format output, 0 for text file
         output_yaml: 1
