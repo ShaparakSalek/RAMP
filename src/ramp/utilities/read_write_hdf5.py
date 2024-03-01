@@ -21,56 +21,6 @@ import numpy as np
 import h5py, sys, os, glob
 import multiprocessing
 
-# There are 23 incomplete simulations out of 1000. Some time steps are missing
-# co2_sat, pressure and gravity are set to np.zeros()
-incomplete_simulations = ['0008', '0037', '0092', '0118', '0120', '0127', 
-'0136', '0150', '0182', '0197', '0211', '0245', '0397', '0449', '0518', 
-'0590', '0598', '0686', '0749', '0863', '0935', '0937', '0970']
-
-nSimulations = 1000  # nRealizations
-years = [5, 10, 20, 30, 40, 50, 60, 80, 100, 120, 150, 200]  # time steps
-nt = len(years)
-
-rootdir = '/Users/tian7/data/NRAP/bff414dd-db60-48df-8e45-5d9ee55fff53/'  # input data: P, co2_sat, tds, gravity
-h5dir = './sim0001_0100.p_co2_tds_grav/'
-if not os.path.exists(h5dir):
-    os.makedirs(h5dir)
-
-# npy numpy array shape
-nx = 40
-ny = 20
-nz = 32
-no_co2_P_tds = np.zeros((nx, ny, nz))
-
-# subregion boundary
-xmin,xmax = 4000,8000
-ymin,ymax = 1500,3500
-zmin,zmax = 0, 1410.80
-
-# vertex: vx, vy and vz
-# voxel center: x, y, z
-vx = np.linspace(xmin, xmax, nx+1)
-vy = np.linspace(ymin, ymax, ny+1)
-x = np.linspace( (vx[0]+vx[1])/2.0, (vx[-2]+vx[-1])/2.0, nx)
-y = np.linspace( (vy[0]+vy[1])/2.0, (vy[-2]+vy[-1])/2.0, ny)
-
-z = np.array([2.5, 7.5, 34.4, 83.1, 131.9, 180.6, 229.4, 278.1, 326.9, 
-              375.6, 424.4, 473.1, 521.9, 570.5, 619.0, 667.5, 716.0, 
-              764.5, 813.0, 861.5, 910.0, 958.5, 1007.0, 1055.5, 1104.0, 
-              1152.5, 1201.0, 1248.5, 1295.0, 1341.5, 1376.3, 1399.6])
-vz = np.zeros(nz+1)
-for i in range(1, nz+1):
-    vz[i] = vz[i-1] + (z[i-1] - vz[i-1]) * 2
-
-# gravity measurement stations on the ground surface
-ngx = 41
-ngy = 21
-no_grav = np.zeros((ngy, ngx))
-
-# gravity x and y components
-gx = np.linspace(4000.0, 8000.0, ngx)
-gy = np.linspace(1500.0, 3500.0, ngy)
-
 # ---------------------------------
 def get_groups(key, archive):
     ''' return a list of groups with or without datasets
@@ -226,21 +176,7 @@ def create_h5(iSim):
 
     hdf5.close()
 
-# ---------------------------------
-# Serial processing
-# for i in range(1, nSimulations+1):
-#    create_h5(i)
 
-# ---------------------------------
-# Parallel processing
-# pool = multiprocessing.Pool()
-# pool.map(create_h5, range(1, nSimulations+1))
-
-# ---------------------------------
-# Test h5 file reader
-h5files = glob.glob(h5dir + '*.h5')
-h5files.sort()
-#read_hdf5_file(h5files[9])
 
 
   

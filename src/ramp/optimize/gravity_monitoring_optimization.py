@@ -15,6 +15,23 @@ from utilities.data_readers.read_input_from_files import get_all_h5_filenames,re
 from utilities.read_write_hdf5 import *
 import argparse
 
+def find_best_gra_station(n_select_point,gra_all_sims,th_gra,ngy,ngx):
+    selected_points_index=[]
+    selected_sims=[]
+    max_det_array=[]
+    for ii in range(n_select_point):
+        if ii==0:
+            ind=gra_all_sims>th_gra
+        else:
+            ind=ind*np.tile(inv_ind.reshape(inv_ind.shape[0],1,1),(1,ngy,ngx))
+        detectability=np.sum(ind,axis=0)/1000
+        max_det_array.append(np.max(detectability))
+        largest_indices = np.unravel_index(np.argsort(detectability.ravel())[-1:], detectability.shape)
+        inv_ind=np.logical_not(ind[:,largest_indices[0][0],largest_indices[1][0]])
+        inv_ind.reshape( inv_ind.shape[0],1)
+        selected_points_index.append(largest_indices)
+        selected_sims.append(np.sum(ind[:,largest_indices[0][0],largest_indices[1][0]]))
+    return selected_points_index, np.cumsum(selected_sims),max_det_array
  
 class GravityMonitoringOptimization:
     '''
@@ -45,7 +62,7 @@ class GravityMonitoringOptimization:
         nSimulations = params['nSimulations']
         years = params['years']
         nt = len(years)
-
+        
         rootdir = params['rootdir']
         workspace_id=params['workspace_id']
         data_folder_id=params['data_folder_id']
@@ -61,7 +78,15 @@ class GravityMonitoringOptimization:
 
         self.outdir = params['outdir']
         self.ths=params['ths']
+        self.n_sta_gra=params['n_sta_gra']
+        # get subset of simulations
+        if params['sim_subset_continue']:
+            subset_list=range(params['sim_subset_continue'][0],params['sim_subset_continue'][1])
+        if params['sim_subset_discrete']:
+            subset_list=params['sim_subset_discrete']
+
         all_gra_sims_fn=get_all_h5_filenames(rootdir)
+        all_gra_sims_fn=all_gra_sims_fn[subset_list]
         # Grid dimensions
         nx, ny, nz = params['nx'], params['ny'], params['nz']
         no_co2_P_tds = np.zeros((nx, ny, nz))
@@ -84,7 +109,8 @@ class GravityMonitoringOptimization:
         no_grav = np.zeros((ngy, ngx))
         gx = np.linspace(xmin, xmax, ngx)
         gy = np.linspace(ymin, ymax, ngy)
-
+        self.ngx=ngx
+        self.ngy=ngy
         gra_data_all_t_all_sims=[]
         for gra_file_name in all_gra_sims_fn:
             if gra_file_name[-7:-3] in incomplete_simulations:
@@ -188,7 +214,7 @@ class GravityMonitoringOptimization:
                 plt.clabel(c, inline=True, fontsize=8, colors='black')
                 plt.title('time='+str(int(time))+' th='+str(th_gra))
                 # remove ticks
-                largest_indices = np.unravel_index(np.argsort(detectability.ravel())[-3:], detectability.shape)
+                largest_indices = np.unravel_index(np.argsort(detectability.ravel())[-self.n_sta_gra:], detectability.shape)
                 
                 # Dictionary to store the data for this subplot
                 subplot_data = {'threshold': th_gra, 'time': time, 'points': []}
@@ -241,6 +267,25 @@ class GravityMonitoringOptimization:
         plt.title('max detectability vs time')
         plt.savefig(self.outdir + '/max_detectability_vs_time.png')
 
+
+    def plot_leaks_vs_stations(self):
+
+        n_select_point=self.n_sta_gra
+        plt.figure(figsize=(24,6))
+        k=0
+        for j,th_gra in enumerate(self.ths):
+            k=k+1
+            plt.subplot(1,len(self.ths),k)
+            for i,time in enumerate(self.times):
+                gra_all_sims=self.gra_data_all_t_all_sims[:,i,:,:]
+                selected_points_index, selected_sims,max_det_array=find_best_gra_station(n_select_point,gra_all_sims,th_gra, self.ngy, self.ngx)
+                plt.plot(np.arange(n_select_point)+1,selected_sims,'o-',label='{} years'.format(time))
+            plt.legend(loc='lower right')
+            plt.title('threshold {} mGal'.format(th_gra))
+            plt.xlabel('number of stations')
+            plt.ylabel('detected leaks')
+        plt.savefig(self.outdir + '/num_of_leaks_vs_stations.png')
+
 if __name__ == "__main__":
     #input_yaml_path='./control_file_interface.yaml'
     # Command-line argument parsing to get the YAML configuration file
@@ -249,7 +294,9 @@ if __name__ == "__main__":
                         help='Path to the configuration YAML file.')
     args = parser.parse_args()
     yaml_path = args.config
+    os.system('ulimit -n 4096')
     grav_data=GravityMonitoringOptimization(yaml_path)
     grav_data.calculate_detectability()
     grav_data.plot_detectability()
     grav_data.plot_max_detectability_vs_time()
+    grav_data.plot_leaks_vs_stations()

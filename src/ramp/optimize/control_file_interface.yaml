@@ -57,12 +57,12 @@ MonitoringTechnology2:
 
 GravityMonitoringOptimization:
   Type: Gravity
-  incomplete_simulations:  ['0008', '0037', '0092', '0118', '0120', '0127',
-'0136', '0150', '0182', '0197', '0211', '0245', '0397', '0449', '0518',
+  incomplete_simulations:  ['0008', '0037', '0092', '0118', '0120', '0127', 
+'0136', '0150', '0182', '0197', '0211', '0245', '0397', '0449', '0518', 
 '0590', '0598', '0686', '0749', '0863', '0935', '0937', '0970']
   nSimulations: 1000  # nRealizations
   years: [5, 10, 20, 30, 40, 50, 60, 80, 100, 120, 150, 200]  # time steps
-  rootdir: 'data/user/gravity'  # input data: P, co2_sat, tds, gravity
+  rootdir: './data/'  # input data: P, co2_sat, tds, gravity
   # EDX workspace id
   workspace_id: 'nrap-task-4-monitoring'
   # EDX data folder id https://edx.netl.doe.gov/workspace/nrap-task-4-monitoring/folder/105d8031-46a2-4c02-82ce-042b74a432f9
@@ -81,9 +81,9 @@ GravityMonitoringOptimization:
   ymax: 3500
   zmin: 0
   zmax: 1410.80
-  z: [2.5, 7.5, 34.4, 83.1, 131.9, 180.6, 229.4, 278.1, 326.9,
-              375.6, 424.4, 473.1, 521.9, 570.5, 619.0, 667.5, 716.0,
-              764.5, 813.0, 861.5, 910.0, 958.5, 1007.0, 1055.5, 1104.0,
+  z: [2.5, 7.5, 34.4, 83.1, 131.9, 180.6, 229.4, 278.1, 326.9, 
+              375.6, 424.4, 473.1, 521.9, 570.5, 619.0, 667.5, 716.0, 
+              764.5, 813.0, 861.5, 910.0, 958.5, 1007.0, 1055.5, 1104.0, 
               1152.5, 1201.0, 1248.5, 1295.0, 1341.5, 1376.3, 1399.6]
   # gravity measurement stations on the ground surface
   ngx: 41
@@ -92,6 +92,12 @@ GravityMonitoringOptimization:
   outdir: './output'
   # detection thresholds
   ths: [3,5,7,10,15,20]
+  # number of gravity stations
+  n_sta_gra: 4
+  # subset of the simulation, continuous numbers, e.g. [200,500] means from 200th to 500th simulations, the max simulation number is 1000
+  sim_subset_continue: [0,1000]
+  # subset of the simulation, discrete numbers, e.g. [1,100,500] means the first 100th and 500th simulations
+  sim_subset_discrete: ''
 
 OptimizationSetup1:
   Components: '[MonitoringTechnology1, MonitoringTechnology2,...]'

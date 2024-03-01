@@ -108,7 +108,7 @@ def get_all_h5_filenames(rootdir):
             all_gra_sims_fn = h5files
         else:
             all_gra_sims_fn = all_gra_sims_fn+h5files
-    return all_gra_sims_fn
+    return np.array(all_gra_sims_fn)
 
 
 def read_yaml(file_path):
