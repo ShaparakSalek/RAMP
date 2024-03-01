@@ -1,0 +1,30 @@
+# This file can be used to download Kimberlina 1.2 seismic data set from EDX.
+# User needs to provide their EDXAPIKey in line 10 and needs to change
+# scenarios of interest in line 25 from None to the input of choice.
+# User can also exclude some of the scenarios by providing input in the line 29.
+# Input provided for OutputDirectory entry can either be an absolute path
+# or a relative path. In the latter case the first folder in the relative path
+# is assumed to be present in the source directory of the RAMP distribution.
+DownloadData:
+    Run: False
+    EDXAPIKey:  ''  # in quotes
+    WorkspaceID: 'nrap-task-4-monitoring'
+    # Do not change DataFolderID entry unless modifying the file for different data set
+    DataFolderID: '306fcd78-b271-4a51-b576-cc6348f3b3af'
+    # We do not recommend users to change OutputDirectory entry as many examples
+    # rely on this data set to be present in the specified folder
+    OutputDirectory: 'data/user/pressure'
+    Instructions:  # might be specific to each data set case
+        # We recommend to keep UnzipArchive entry True unless users
+        # want to do archive unzipping manually
+        UnzipArchive: True   # applies to all downloaded zip files
+        DeleteArchive: True  # applies to all downloaded zip files
+        # FileNameTemplate should be setup to None if all files
+        # within the directory with DataFolderID are to be downloaded.
+        # Indices and ToExclude entries are not used in this case
+        FileNameTemplate: None
+        Indices: None   # in quotes, e.g., '1-100, 123', or None (without quotes)
+        # if not applicable or all possible scenarios are to be downloaded
+        # ToExclude are indices that are within the range specified by Indices entry
+        # but specifying files that should not be downloaded
+        ToExclude: None  # in quotes, e.g., '1,2', or None (without quotes)
