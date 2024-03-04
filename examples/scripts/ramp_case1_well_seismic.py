@@ -55,7 +55,6 @@ from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
-import networkx as networkx
 
 
 mpl.use('Agg')
@@ -74,7 +73,9 @@ from ramp.utilities.data_readers import default_bin_file_reader
 from ramp import SeismicDataContainer
 from ramp import SeismicSurveyConfiguration
 from ramp import SeismicMonitoring
-from ramp.components.seismic.seismic_configuration import SeismicSurveyConfiguration, five_n_receivers_array_creator
+from ramp.components.seismic.seismic_configuration import (
+    SeismicSurveyConfiguration, five_n_receivers_array_creator,
+    density_based_array_creator)
 from ramp.optimize.ttd_det_optimization import *
 
 #from ramp import five_n_receivers_array_creator
@@ -482,7 +483,7 @@ class MonitoringPlan:
     #def compute_avg_plume_identification_potential(self,satuBool):
     #    pips = []
     #    for detection in self.detections:
-    #        # 
+    #        #
     #    return np.mean(pips)
 
     def compute_avg_plume_delineation_potential(self,satuBool):
@@ -937,7 +938,13 @@ if __name__ == "__main__":
                 progress_bar.close()
                 if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
                     print("ERROR, something went wrong")
-        p = subprocess.Popen(['unzip','-o', fname], cwd=download_directory)
+
+        path_name = os.sep.join([download_directory,fname])
+        with zipfile.ZipFile(path_name, 'r') as zip_ref:
+            try:
+                zip_ref.extractall(download_directory)
+            except FileExistsError:
+                pass
 
     if inputs['download_data'] or inputs['run_optimization'] or inputs['plot_results']:
         print('Step {}: Performing check of the downloaded data...'.format(step_ind))
@@ -1024,7 +1031,6 @@ if __name__ == "__main__":
                 max_receivers = inputs['receiversMax']
                 receivers = np.c_[np.linspace(min_receivers, max_receivers, num=num_receivers),
                                   np.zeros(num_receivers),
-                                  np.zeros(num_receivers)]
 
         # load one HDF5 file into memory to get the shape of the dataset, min/max values etc
         file = h5py.File(download_directory+'/sim%04i.h5'%1,'r')

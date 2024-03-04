@@ -12,7 +12,7 @@
  "run_optimization": true,
 
  # defines whether or not to generate output images
- "plot_results": false,
+ "plot_results": true,
 
  # leave this equal to 1
  "data_case": 1,

@@ -54,7 +54,9 @@ from ramp.utilities.data_readers import default_bin_file_reader
 from ramp import SeismicDataContainer
 from ramp import SeismicSurveyConfiguration
 from ramp import SeismicMonitoring
-from ramp.components.seismic.seismic_configuration import SeismicSurveyConfiguration, five_n_receivers_array_creator
+from ramp.components.seismic.seismic_configuration import (
+    SeismicSurveyConfiguration, five_n_receivers_array_creator,
+    density_based_array_creator)
 from ramp.optimize.ttd_det_optimization import *
 
 #from ramp import five_n_receivers_array_creator
@@ -104,14 +106,14 @@ try:
     inputs = json.load(open(sys.argv[1], 'r'))
     output_directory = inputs['directory_nrms_data']
     if not os.path.exists(output_directory):
-            os.makedirs(output_directory)
+        os.makedirs(output_directory)
     shutil.copyfile(sys.argv[1], output_directory + '/inputs.json')
 except:
     try:
         inputs = yaml.safe_load(open(sys.argv[1], 'r'))
         output_directory = inputs['directory_nrms_data']
         if not os.path.exists(output_directory):
-                os.makedirs(output_directory)
+            os.makedirs(output_directory)
         shutil.copyfile(sys.argv[1], output_directory + '/inputs.yaml')
     except: ValueError
 
@@ -409,7 +411,7 @@ if __name__ == "__main__":
                 except:
                     pass
 
-    if inputs['download_data'] or inputs['run_optimization']:
+    if inputs['download_data'] or inputs['run_optimization'] or inputs['process_data']:
         print('Step {}: Performing check of the downloaded data...'.format(step_ind))
         step_ind = step_ind + 1
         # Check 2nd round of downloads for incomplete data to exclude from NRMS calculations
@@ -438,7 +440,7 @@ if __name__ == "__main__":
                 os.makedirs(output_directory)
             data_reader = default_bin_file_reader
             data_reader_kwargs = {'data_shape': (1251, 101, 9),
-                                'move_axis_destination': [-1, -2, -3]}
+                                  'move_axis_destination': [-1, -2, -3]}
 
             num_time_points = len(time_points)
             # excluded = [37, 118, 136, 150, 182, 245]  # 6 scenarios
@@ -457,43 +459,43 @@ if __name__ == "__main__":
                     data_setup[scen]['t{}'.format(t_ind+1)] = 'data_sim{:04}_t{}.bin'.format(scen, tp)
             baseline = True
 
-            '''# Define coordinates of sources
-            num_sources = 9
-            sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
-                            np.zeros(num_sources),
-                            np.zeros(num_sources)]
+    '''# Define coordinates of sources
+    num_sources = 9
+    sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
+                    np.zeros(num_sources),
+                    np.zeros(num_sources)]
 
-            # Define coordinates of receivers
-            num_receivers = 101
-            receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
-                            np.zeros(num_receivers),
-                            np.zeros(num_receivers)]'''
+    # Define coordinates of receivers
+    num_receivers = 101
+    receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
+                    np.zeros(num_receivers),
+                    np.zeros(num_receivers)]'''
 
-            if 'sources' in inputs.keys():
-                num_sources = len(inputs['sources'])
-                sources = np.c_[inputs['sources'],
-                                np.zeros(num_sources),
-                                np.zeros(num_sources)]
-            else:
-                num_sources = inputs['sourcesNum']
-                min_sources = inputs['sourcesMin']
-                max_sources = inputs['sourcesMax']
-                sources = np.c_[np.linspace(min_sources, max_sources, num=num_sources),
-                                np.zeros(num_sources),
-                                np.zeros(num_sources)]
+    if 'sources' in inputs.keys():
+        num_sources = len(inputs['sources'])
+        sources = np.c_[inputs['sources'],
+                        np.zeros(num_sources),
+                        np.zeros(num_sources)]
+    else:
+        num_sources = inputs['sourcesNum']
+        min_sources = inputs['sourcesMin']
+        max_sources = inputs['sourcesMax']
+        sources = np.c_[np.linspace(min_sources, max_sources, num=num_sources),
+                        np.zeros(num_sources),
+                        np.zeros(num_sources)]
 
-            if 'receivers' in inputs.keys():
-                num_receivers = len(inputs['receivers'])
-                receivers = np.c_[inputs['receivers'],
-                                  np.zeros(num_receivers),
-                                  np.zeros(num_receivers)]
-            else:
-                num_receivers = inputs['receiversNum']
-                min_receivers = inputs['receiversMin']
-                max_receivers = inputs['receiversMax']
-                receivers = np.c_[np.linspace(min_receivers, max_receivers, num=num_receivers),
-                                  np.zeros(num_receivers),
-                                  np.zeros(num_receivers)]
+    if 'receivers' in inputs.keys():
+        num_receivers = len(inputs['receivers'])
+        receivers = np.c_[inputs['receivers'],
+                          np.zeros(num_receivers),
+                          np.zeros(num_receivers)]
+    else:
+        num_receivers = inputs['receiversNum']
+        min_receivers = inputs['receiversMin']
+        max_receivers = inputs['receiversMax']
+        receivers = np.c_[np.linspace(min_receivers, max_receivers, num=num_receivers),
+                          np.zeros(num_receivers),
+                          np.zeros(num_receivers)]
 
     if inputs['process_data']:
         print('Step {}: Processing seismic data into NRMS values...'.format(step_ind))
@@ -607,6 +609,20 @@ if __name__ == "__main__":
 
     if inputs['run_optimization']:
         print('Step {}: Running optimization...'.format(step_ind))
+
+        # Process arrays type input
+        arrays_type = inputs.get('arrays', 'five_n_receivers')
+        creator_methods = {'five_n_receivers': five_n_receivers_array_creator,
+                          'dense': density_based_array_creator,
+                          'medium': density_based_array_creator,
+                          'sparse': density_based_array_creator}
+        if arrays_type == 'five_n_receivers':
+            array_creator_kwargs = {'source_coords': sources,
+                                    'receiver_coords': receivers}
+        elif arrays_type in ['dense', 'medium', 'sparse']:
+            array_creator_kwargs = {'num_sources': 9, 'num_receivers': 101,
+                                    'array_min_receivers': 3,
+                                    'density': arrays_type}
         step_ind = step_ind + 1
         # Start of array_construction_nrms_processing.ipynb
         # Setup directories
@@ -619,11 +635,9 @@ if __name__ == "__main__":
             os.makedirs(output_directory)
 
         # Create survey configuration with defined coordinates
-        array_creator_kwargs = {'source_coords': sources,
-                                'receiver_coords': receivers}
         configuration = SeismicSurveyConfiguration(
             sources, receivers, name='Test Survey', create_arrays=True,
-            array_creator=five_n_receivers_array_creator,
+            array_creator=creator_methods[arrays_type],
             array_creator_kwargs=array_creator_kwargs)
         print('Number of created arrays:', configuration.num_arrays)
 
@@ -992,6 +1006,9 @@ if __name__ == "__main__":
         plt.locator_params(axis='x', integer=True, tight=True)
         plt.xlabel('Number of Leaks Detected/Detectable', fontsize=14)
         plt.ylabel('Average Time to First Detection [years]', fontsize=14)
+
+        if not os.path.exists(inputs['directory_plots']):
+            os.makedirs(inputs['directory_plots'])
 
         plt.savefig('%s/multi_stage_optimization.png'%inputs['directory_plots'],
                     format='png', bbox_inches='tight')

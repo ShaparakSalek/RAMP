@@ -9,7 +9,7 @@
  "download_data": false,
 
  # defines whether or not to run the optimization
- "run_optimization": false,
+ "run_optimization": true,
 
  # defines whether or not to generate output images
  "plot_results": true,
@@ -20,7 +20,7 @@
  # define the list of scenarios to include the optimization
  # this can be in the form of a range, in quotes, "100-200"
  # or can be simply a list of specific scenarios, [1,2,3,4,5,6,7,8,9]
- "scenarios": "1-400",
+ "scenarios": "1-30",
 
  # specifies the directory where seismic data will be stored
  "directory_seismic_data": "../../data/user/seismic",

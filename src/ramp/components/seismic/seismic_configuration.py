@@ -195,6 +195,148 @@ def elementary_array_creator(num_sources=1, num_receivers=10, receiver_step=1,
     return num_arrays, produced_arrays
 
 
+def multi_step_array_creator(num_sources=9, num_receivers=101, steps=None,
+                             array_min_receivers=3):
+    """
+    Create a dictionary of arrays.
+
+    Created arrays will be comprised of all arrays with all the sources
+    separated by specified steps.
+
+    Parameters
+    ----------
+    num_sources : int
+        Number of sources in the original seismic survey configuration.
+    num_receivers : int
+        Number of receivers in the original seismic survey configuration.
+    steps : list
+        Integer step(s) between indices of consecutive receivers provided as list
+    array_min_receivers : int
+        Minimum number of receivers to be present in the created arrays
+
+    Returns
+    -------
+    num_arrays : int
+        Number of produced arrays
+    produced_arrays : dict
+        Dictionary containing information about created arrays. Possible keys are
+        integers from 0 to (num_arrays-1). Each key correspond to one of the
+        created arrays and is represented as a dictionary containing
+        the following information:
+        'source' : int
+            Index of source for a given array
+        'receivers' : list of int
+            List of receivers indices
+        'num_sources' : int
+            Number of sources in a given array. In this case, it's always 1.
+        'num_receivers' : int
+            Number of receivers in an given array
+
+    """
+    # Default values if no arrays are constructed
+    produced_arrays = None
+    num_arrays = 0
+
+    if num_sources > 0 and num_receivers > 0:
+        if steps is None:
+            steps = [1]
+        elif isinstance(steps, list):
+            flag = np.all(np.array(steps) < num_receivers)
+            if not flag:
+                warn_msg = ''.join(['Some or all values in the provided argument ',
+                                   'steps are too large. No arrays will be produced'])
+                logging.warn(err_msg)
+                return num_arrays, produced_arrays
+        else:
+            warn_msg = 'Argument steps is wrong type. No arrays will be produced.'
+            logging.warn(err_msg)
+            return num_arrays, produced_arrays
+
+        a_ind = 0
+        produced_arrays = {}
+        for ind in range(num_sources):
+            for step in steps:
+                for rind in range(0, step):
+                    receiver_indices = list(range(rind, num_receivers, step))
+                    array_num_receivers = len(receiver_indices)
+                    if array_num_receivers >= array_min_receivers:
+                        produced_arrays[a_ind] = {
+                            'source': ind,
+                            'receivers': receiver_indices,
+                            'num_sources': 1,
+                            'num_receivers': array_num_receivers}
+                        a_ind = a_ind + 1
+        num_arrays = len(produced_arrays.keys())
+        print('Check', num_arrays==a_ind)
+
+    else:
+        warn_msg = ''.join(['Arrays cannot be created for the selected values ',
+                            'of input arguments. num_sources and/or num_receivers ',
+                            'have invalid values.'])
+        logging.warn(warn_msg)
+
+    return num_arrays, produced_arrays
+
+
+def density_based_array_creator(num_sources=9, num_receivers=101,
+                                array_min_receivers=3, density='dense'):
+    """
+    Create a dictionary of arrays.
+
+    Created arrays will be comprised of all arrays with all the sources
+    separated by specified steps dependent on the provided density.
+
+    Parameters
+    ----------
+    num_sources : int, optional
+        Number of sources in the original seismic survey configuration
+    num_receivers : int, optional
+        Number of receivers in the original seismic survey configuration
+    array_min_receivers : int, optional
+        Minimum number of receivers to be present in the created arrays
+    density : str, optional
+        Type of spacing between the receivers of the arrays
+
+    Returns
+    -------
+    num_arrays : int
+        Number of produced arrays
+    produced_arrays : dict
+        Dictionary containing information about created arrays. Possible keys are
+        integers from 0 to (num_arrays-1). Each key correspond to one of the
+        created arrays and is represented as a dictionary containing
+        the following information:
+        'source' : int
+            Index of source for a given array
+        'receivers' : list of int
+            List of receivers indices
+        'num_sources' : int
+            Number of sources in a given array. In this case, it's always 1.
+        'num_receivers' : int
+            Number of receivers in an given array
+
+    """
+    # Default values if no arrays are constructed
+    produced_arrays = None
+    num_arrays = 0
+
+    density_to_steps = {'dense': [1],
+                        'medium': [2, 3, 4],
+                        'sparse': [5, 6, 7, 8]}
+    # Check whether the density argument has the right value
+    if density in ['dense', 'medium', 'sparse']:
+        steps = density_to_steps[density]
+        num_arrays, produced_arrays = multi_step_array_creator(
+            num_sources=num_sources, num_receivers=num_receivers,
+            steps=steps, array_min_receivers=array_min_receivers)
+        return num_arrays, produced_arrays
+    else:
+        warn_msg = 'Argument density has an unrecognized value. No arrays will be produced.'
+        logging.warn(warn_msg)
+        # Default values are returned
+        return num_arrays, produced_arrays
+
+
 def five_n_receivers_array_creator(source_coords=None, receiver_coords=None):
     """
     Create a dictionary of arrays.
@@ -289,9 +431,9 @@ def five_n_receivers_array_creator(source_coords=None, receiver_coords=None):
     return num_arrays, produced_arrays
 
 
-def test_seismic_configuration1():
+def create_sources_and_receivers():
     """
-    Test work of SeismicSurveyConfiguration class.
+    Auxiliary method to produce arrays of sources and receivers
 
     Returns
     -------
@@ -309,6 +451,72 @@ def test_seismic_configuration1():
     receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
                       np.zeros(num_receivers),
                       np.zeros(num_receivers)]
+
+    return sources, receivers
+
+
+def plot_arrays(conf_arrays, source_coords, receiver_coords, num_plots=1,
+                num_arrays_per_plot=100, xlims=[4000, 8000],
+                markersize=3):
+    """
+    Auxiliary method to plot all arrays on several plots
+
+    Parameters
+    ----------
+    arrays : TYPE
+        DESCRIPTION.
+    num_plots : TYPE, optional
+        DESCRIPTION. The default is 1.
+
+    Returns
+    -------
+    None.
+
+    """
+    plt.close('all')
+    for plot_ind in range(num_plots):
+        fig = plt.figure(figsize=(8, 10))
+        ax = fig.add_subplot(111)
+        init_ind = plot_ind*num_arrays_per_plot
+        last_ind = (plot_ind+1)*num_arrays_per_plot-1
+        for ind in range(init_ind, last_ind+1):
+            if ind in conf_arrays:
+                sind = conf_arrays[ind]['source']
+                rind = conf_arrays[ind]['receivers']
+                nr = conf_arrays[ind]['num_receivers'] # number of receivers in the array
+                if ind == init_ind:
+                    ax.plot(receiver_coords[rind, 0], nr*[ind+1], 'sb',
+                            label='receivers', markersize=markersize)
+                    ax.plot([source_coords[sind, 0]], [ind+1], 'or',
+                            label='sources', markersize=markersize)
+                else:
+                    ax.plot(receiver_coords[rind, 0], nr*[ind+1], 'sb',
+                            label=None, markersize=markersize)
+                    ax.plot([source_coords[sind, 0]], [ind+1], 'or',
+                            label=None, markersize=markersize)
+
+        ax.set_xlim(xlims[0], xlims[1])
+        ax.set_xlabel('x, [m]')
+        if num_plots == 1:
+            ax.set_ylim(0.5, last_ind+1.5)
+        else:
+            ax.set_ylim(init_ind, last_ind+2)
+        ax.set_ylabel('array index')
+        ax.invert_yaxis()
+        ax.legend()
+
+
+def test_seismic_configuration1():
+    """
+    Test work of SeismicSurveyConfiguration class.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
 
     # Create survey configuration with defined coordinates
     configuration = SeismicSurveyConfiguration(sources, receivers, name='Test Survey')
@@ -326,17 +534,8 @@ def test_seismic_configuration2():
     None.
 
     """
-    # Define coordinates of sources
-    num_sources = 9
-    sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
-                    np.zeros(num_sources),
-                    np.zeros(num_sources)]
-
-    # Define coordinates of receivers
-    num_receivers = 101
-    receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
-                      np.zeros(num_receivers),
-                      np.zeros(num_receivers)]
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
 
     # Create survey configuration with defined coordinates
     configuration = SeismicSurveyConfiguration(
@@ -345,25 +544,12 @@ def test_seismic_configuration2():
                             'num_receivers': configuration.num_receivers}
     configuration.create_arrays(elementary_array_creator,
                                 **array_creator_kwargs)
+    print('Number of created arrays:', configuration.num_arrays)
 
     # Plot arrays
-    fig = plt.figure(figsize=(8, 10))
-    ax = fig.add_subplot(111)
-    for ind in configuration.arrays:
-
-        sind = configuration.arrays[ind]['source']
-        rind = configuration.arrays[ind]['receivers']
-        nr = configuration.arrays[ind]['num_receivers'] # number of receivers in the array
-        if ind == 0:
-            ax.plot(receivers[rind, 0], nr*[ind+1], 'sb', label='receivers')
-            ax.plot([sources[sind, 0]], [ind+1], 'or', label='source')
-        else:
-            ax.plot(receivers[rind, 0], nr*[ind+1], 'sb', label=None)
-            ax.plot([sources[sind, 0]], [ind+1], 'or', label=None)
-
-    ax.set_xlabel('x, [m]')
-    ax.set_ylabel('Array index')
-    ax.legend()
+    plot_arrays(configuration.arrays, sources, receivers, num_plots=1,
+                num_arrays_per_plot=configuration.num_arrays, xlims=[3900, 8100],
+                markersize=5)
 
 
 def test_seismic_configuration3():
@@ -375,17 +561,8 @@ def test_seismic_configuration3():
     None.
 
     """
-    # Define coordinates of sources
-    num_sources = 9
-    sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
-                    np.zeros(num_sources),
-                    np.zeros(num_sources)]
-
-    # Define coordinates of receivers
-    num_receivers = 101
-    receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
-                      np.zeros(num_receivers),
-                      np.zeros(num_receivers)]
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
 
     # Create survey configuration with defined coordinates
     array_creator_kwargs = {'source_coords': sources,
@@ -399,36 +576,15 @@ def test_seismic_configuration3():
         print(configuration.arrays[ind]['source'],
               configuration.arrays[ind]['receivers'],
               configuration.arrays[ind]['num_receivers'])
-    print('Number of created arrays', configuration.num_arrays)
+    print('Number of created arrays:', configuration.num_arrays)
 
     # Plot arrays
-    plt.close('all')
-    for plot_ind in range(5):
-        fig = plt.figure(figsize=(8, 10))
-        ax = fig.add_subplot(111)
-        init_ind = plot_ind*100
-        last_ind = (plot_ind+1)*100-1
-        for ind in range(init_ind, last_ind+1):
-            if ind in configuration.arrays:
-                sind = configuration.arrays[ind]['source']
-                rind = configuration.arrays[ind]['receivers']
-                nr = configuration.arrays[ind]['num_receivers'] # number of receivers in the array
-                if ind == init_ind:
-                    ax.plot(receivers[rind, 0], nr*[ind+1], 'sb', label='receivers', markersize=3)
-                    ax.plot([sources[sind, 0]], [ind+1], 'or', label='sources', markersize=3)
-                else:
-                    ax.plot(receivers[rind, 0], nr*[ind+1], 'sb', label=None, markersize=3)
-                    ax.plot([sources[sind, 0]], [ind+1], 'or', label=None, markersize=3)
-
-        ax.set_xlim(4000, 8000)
-        ax.set_xlabel('x, [m]')
-        ax.set_ylim(init_ind, last_ind+2)
-        ax.set_ylabel('array index')
-        ax.invert_yaxis()
-        ax.legend()
+    plot_arrays(configuration.arrays, sources, receivers, num_plots=5,
+                num_arrays_per_plot=100, xlims=[3900, 8100],
+                markersize=3)
 
 
-def test_array_creator():
+def test_five_n_receivers_array_creator():
     """
     Test work of five_n_receivers_array_creator method.
 
@@ -437,57 +593,119 @@ def test_array_creator():
     None.
 
     """
-    # Define coordinates of sources
-    num_sources = 9
-    sources = np.c_[4000 + np.array([240, 680, 1120, 1600, 2040, 2480, 2920, 3400, 3840]),
-                    np.zeros(num_sources),
-                    np.zeros(num_sources)]
-
-    # Define coordinates of receivers
-    num_receivers = 101
-    receivers = np.c_[4000 + np.linspace(0, 4000, num=num_receivers),
-                      np.zeros(num_receivers),
-                      np.zeros(num_receivers)]
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
 
     num_arrays, config_arrays = five_n_receivers_array_creator(sources, receivers)
 
-    to_plot = True
-    if to_plot:
-        # Plot arrays
-        for plot_ind in range(5):
-            fig = plt.figure(figsize=(13, 10))
-            ax = fig.add_subplot(111)
-            init_ind = plot_ind*100
-            last_ind = (plot_ind+1)*100-1
-            for ind in range(init_ind, last_ind+1):
-                if ind in config_arrays:
-                    sind = config_arrays[ind]['source']
-                    rind = config_arrays[ind]['receivers']
-                    nr = config_arrays[ind]['num_receivers'] # number of receivers in the array
-                    if ind == init_ind:
-                        ax.plot(receivers[rind, 0], nr*[ind+1], 'sb',
-                                label='receivers', markersize=3)
-                        ax.plot([sources[sind, 0]], [ind+1], 'or',
-                                label='sources', markersize=3)
-                    else:
-                        ax.plot(receivers[rind, 0], nr*[ind+1], 'sb',
-                                label=None, markersize=3)
-                        ax.plot([sources[sind, 0]], [ind+1], 'or',
-                                label=None, markersize=3)
+    print('Number of created arrays:', num_arrays)
 
-            ax.set_xlim(4000-100, 8000+100)
-            ax.set_xlabel('x, [m]')
-            ax.set_ylim(init_ind, last_ind+2)
-            ax.set_ylabel('array index')
-            ax.invert_yaxis()
-            ax.legend()
+    # Plot arrays
+    plot_arrays(config_arrays, sources, receivers, num_plots=5,
+                num_arrays_per_plot=100, xlims=[3900, 8100],
+                markersize=3)
+
+
+def test_multi_step_array_creator1():
+    """
+    Test work of multi_step_array_creator method.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
+
+    num_arrays, config_arrays = multi_step_array_creator(
+        num_sources=9, num_receivers=101, steps=[1])
+
+    print('Number of created arrays:', num_arrays)
+
+    # Plot arrays
+    plot_arrays(config_arrays, sources, receivers, num_plots=1,
+                num_arrays_per_plot=num_arrays, xlims=[3900, 8100],
+                markersize=3)
+
+def test_multi_step_array_creator2():
+    """
+    Test work of multi_step_array_creator method.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
+
+    num_arrays, config_arrays = multi_step_array_creator(
+        num_sources=9, num_receivers=101, steps=[2, 3, 4])
+
+    print('Number of created arrays:', num_arrays)
+
+    # Plot arrays
+    plot_arrays(config_arrays, sources, receivers, num_plots=1,
+                num_arrays_per_plot=num_arrays, xlims=[3900, 8100],
+                markersize=3)
+
+
+def test_multi_step_array_creator3():
+    """
+    Test work of multi_step_array_creator method.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
+
+    num_arrays, config_arrays = multi_step_array_creator(
+        num_sources=9, num_receivers=101, steps=[5, 6, 7, 8])
+
+    print('Number of created arrays:', num_arrays)
+
+    # Plot arrays
+    plot_arrays(config_arrays, sources, receivers, num_plots=5,
+                num_arrays_per_plot=52, xlims=[3900, 8100],
+                markersize=3)
+
+
+def test_density_based_array_creator():
+    """
+    Test work of multi_step_array_creator method.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get sources and receivers
+    sources, receivers = create_sources_and_receivers()
+
+    num_arrays, config_arrays = density_based_array_creator(
+        num_sources=9, num_receivers=101, density='medium')
+
+    print('Number of created arrays:', num_arrays)
+
+    # Plot arrays
+    plot_arrays(config_arrays, sources, receivers, num_plots=1,
+                num_arrays_per_plot=num_arrays, xlims=[3900, 8100],
+                markersize=3)
 
 
 if __name__ == "__main__":
 
-    test_case = 1
+    test_case = 8
     available_tests = {1: test_seismic_configuration1,
                        2: test_seismic_configuration2,
                        3: test_seismic_configuration3,
-                       4: test_array_creator}
+                       4: test_five_n_receivers_array_creator,
+                       5: test_multi_step_array_creator1,
+                       6: test_multi_step_array_creator2,
+                       7: test_multi_step_array_creator3,
+                       8: test_density_based_array_creator}
     available_tests[test_case]()

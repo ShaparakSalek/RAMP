@@ -1,6 +1,6 @@
 edx_api_key: your_api_key_here
 download_data: true
-process_data: true
+process_data: true # can be run only once for selected scenarios
 run_optimization: true
 plot_results: true
 data_case: 1
@@ -29,5 +29,6 @@ sources:
 - 7840
 stage1: 4
 stage2: 9
+arrays: 'five_n_receivers'  # or 'dense', or 'sparse', or 'medium'
 threshold_nrms: 50
 number_proposals: 3
