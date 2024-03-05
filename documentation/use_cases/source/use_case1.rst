@@ -402,55 +402,9 @@ Each sensor includes the depth (as an index value k, not meters) within the well
 Under the list of arrays, each array is defined using an index of which input array it refers to ("iArray"), and the timestep
 at which the survey was done ("survey_timestep").
 
+Structure of output files for well/seismic optimization
+
 .. image:: images/uc1/well_seismic_output_structure.png
    :align: center
    :alt: Structure of output files for well/seismic optimization
 
-
-
-
-point_time_days
-
-seismic_arrays
-
-    -> num_receivers
-
-    -> receivers
-
-    -> source
-
-seismic_receiverLocation_meters
-
-seismic_sourceLocation_meters
-
-seismic_time_days
-
-stages
-
-	-> iReals
-
-	-> pareto
-
-    -> plans
-
-		-> wells
-
-            -> depth
-
-			-> drill_timestep
-
-            -> sensors
-
-                -> install_timestep
-
-                -> k
-
-                -> type
-
-        -> arrays
-
-            -> iArray
-
-            -> survey_timestep
-
-   		-> detections
