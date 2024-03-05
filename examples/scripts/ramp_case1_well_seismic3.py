@@ -215,7 +215,7 @@ def add_sensor_combs(input_plans,satuBool,nrmsBool,maxWells,maxArrays):
 
                     if keep: output_plans.add(planNew)
 
-        for iArray in range(nrmsBool.shape[1]):
+        for iArray in range(nrmsBool.shape[0]):
 
             # if we already have the maximum number of seismic arrays, don't add another one
             if len(plan.arrays)>=int(inputs['max_arrays']): continue
