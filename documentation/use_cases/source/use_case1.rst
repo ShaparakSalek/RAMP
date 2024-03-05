@@ -365,3 +365,63 @@ stages
 	-> pareto
 
 	-> iReals
+
+
+********************************
+Use Case 1 Wellbore plus Seismic Measurements
+********************************
+
+The output files of the wellbore point sensor plus seimsic optimization first includes
+the list of timesteps for point sensors (which is distinct from seismic timesteps), under
+the name "point_time_days", with each time index showing the corresponding time in days.
+
+Next the list of input seismic arrays is shown, representing the set of building blocks that the 
+optimization has to work with. Each seismic array is identified by an index
+number, and includes the number of receivers (num_receivers), the list of receiver indicces
+under the name "receivers", and the source index.
+
+Once the arrays are defined by reference using indicces, the actual physical coordinates of
+those indicces are defined under "seismic_receiverLocation_meters" and "seismic_sourceLocation_meters".
+For each index, a set of three floating point numbers are listed, representing x, y, and z coordinates.
+
+The set of timesteps particular to the seismic dataset is then defined under "seismic_time_days", 
+with each time index showing the corresponding time in days.
+
+After that a list of stages are defined. At each stage, a list of monitoring plans are defined ("plans"),
+and a list of index values ("pareto") is returned specifying which of those monitoring plans are Pareto-optimal
+in terms of the three objectives. Additionally, a list of index values ("iReals") is returned
+specifying which leakage scenarios the algorithm was aware of at that point in time.
+
+Each monitoring plan is made up of a set of wells, a set of arrays, and a list of indicces
+representing the scenarios detected by that combination of point sensors and seismic surveys.
+
+Under the list of wells, each well includes the i and j coordinates of the wellhead, the depth drilled,
+the timestep (ie index value, not day or year) when the well is drilled, and the list of sensors installed.
+Each sensor includes the depth (as an index value k, not meters) within the well at which it is located, the timestep of installation, and the type of sensor, such as pressure or saturation.
+
+Under the list of arrays, each array is defined using an index of which input array it refers to ("iArray"), and the timestep
+at which the survey was done ("survey_timestep").
+
+point_time_days
+seismic_arrays
+    -> num_receivers
+    -> receivers
+    -> source
+seismic_receiverLocation_meters
+seismic_sourceLocation_meters
+seismic_time_days
+stages
+	-> iReals
+	-> pareto
+    -> plans
+		-> wells
+            -> depth
+			-> drill_timestep
+            -> sensors
+                -> install_timestep
+                -> k
+                -> type
+        -> arrays
+            -> iArray
+            -> survey_timestep
+   		-> detections
