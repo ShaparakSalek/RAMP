@@ -221,7 +221,7 @@ def add_sensor_combs(input_plans,satuBool,nrmsBool,maxWells,maxArrays):
             if len(plan.arrays)>=int(inputs['max_arrays']): continue
 
             # if this seismic array never detects any leaks, don't add it
-            if not np.any(nrmsBool[:,iArray,:]): continue
+            if not np.any(nrmsBool[iArray,:,:]): continue
 
             for it in range(nt):
 
