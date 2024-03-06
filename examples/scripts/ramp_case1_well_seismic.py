@@ -1030,7 +1030,7 @@ if __name__ == "__main__":
                 min_receivers = inputs['receiversMin']
                 max_receivers = inputs['receiversMax']
                 receivers = np.c_[np.linspace(min_receivers, max_receivers, num=num_receivers),
-                                  np.zeros(num_receivers),
+                                  np.zeros(num_receivers)],
 
         # load one HDF5 file into memory to get the shape of the dataset, min/max values etc
         file = h5py.File(download_directory+'/sim%04i.h5'%1,'r')
