@@ -92,12 +92,14 @@ GravityMonitoringOptimization:
   outdir: './output'
   # detection thresholds
   ths: [3,5,7,10,15,20]
-  # number of gravity stations
-  n_sta_gra: 4
+  # max number of gravity stations
+  max_sta_gra: 10
   # subset of the simulation, continuous numbers, e.g. [200,500] means from 200th to 500th simulations, the max simulation number is 1000
   sim_subset_continue: [0,1000]
   # subset of the simulation, discrete numbers, e.g. [1,100,500] means the first 100th and 500th simulations
   sim_subset_discrete: ''
+  # file path of the ass centroid
+  mass_centroid_file: './data/kim12_co2_0.5pc_centroid_vol_mass.csv'
 
 
 ERTMonitoringOptimization:
