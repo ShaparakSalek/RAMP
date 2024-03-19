@@ -92,12 +92,44 @@ GravityMonitoringOptimization:
   outdir: './output'
   # detection thresholds
   ths: [3,5,7,10,15,20]
-  # number of gravity stations
-  n_sta_gra: 4
+  # max number of gravity stations
+  max_sta_gra: 10
   # subset of the simulation, continuous numbers, e.g. [200,500] means from 200th to 500th simulations, the max simulation number is 1000
   sim_subset_continue: [0,1000]
   # subset of the simulation, discrete numbers, e.g. [1,100,500] means the first 100th and 500th simulations
   sim_subset_discrete: ''
+  # file path of the ass centroid
+  mass_centroid_file: './data/kim12_co2_0.5pc_centroid_vol_mass.csv'
+
+
+ERTMonitoringOptimization:
+  # EDX workspace id
+  workspace_id: 'nrap-task-4-monitoring'
+  # EDX data folder id
+  data_folder_id: '105d8031-46a2-4c02-82ce-042b74a432f9'
+  # hover your mouse on your EDX profile page 'EDX-API-KEY' and click to copy
+  api_key: ' '
+
+  datadir: './data/'
+  input_format: h5
+  nSimulations: 1000
+  # 23 incomplete simulations due to simulation divergence
+  incomplete_simulations: ['0008', '0037', '0092', '0118', '0120', '0127',
+        '0136', '0150', '0182', '0197', '0211', '0245', '0397', '0449', '0518',
+        '0590', '0598', '0686', '0749', '0863', '0935', '0937', '0970']
+
+  # assume 3D ERT survey with multiple 2D lines
+  num_ert_lines: 5
+  # assume 3D ERT survey with multiple 2D lines
+  ert_line_id: 3
+  # detection threshold in percentage for changes in absolute apparent resistivity
+  ert_threshold: 10
+  # choose one or more output formats for recommended monitoring plans
+  output_format: ['csv', 'yaml', 'h5']
+  # Root directory path for output files of ERT monitoring design
+  outdir: ./output_ert/
+
+
 
 OptimizationSetup1:
   Components: '[MonitoringTechnology1, MonitoringTechnology2,...]'

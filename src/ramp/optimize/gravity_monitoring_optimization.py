@@ -14,12 +14,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities.data_readers.read_input_from_files import get_all_h5_filenames,read_yaml,download_data_from_edx
 from utilities.read_write_hdf5 import *
 import argparse
+import pandas as pd
 
-def find_best_gra_station(n_select_point,gra_all_sims,th_gra,ngy,ngx):
+def find_best_gra_station(max_select_point,gra_all_sims,th_gra,ngy,ngx):
     selected_points_index=[]
     selected_sims=[]
+    ind_array=[]
     max_det_array=[]
-    for ii in range(n_select_point):
+    for ii in range(max_select_point):
         if ii==0:
             ind=gra_all_sims>th_gra
         else:
@@ -27,11 +29,15 @@ def find_best_gra_station(n_select_point,gra_all_sims,th_gra,ngy,ngx):
         detectability=np.sum(ind,axis=0)/1000
         max_det_array.append(np.max(detectability))
         largest_indices = np.unravel_index(np.argsort(detectability.ravel())[-1:], detectability.shape)
+        ind_array.append(ind[:,largest_indices[0][0],largest_indices[1][0]])
         inv_ind=np.logical_not(ind[:,largest_indices[0][0],largest_indices[1][0]])
         inv_ind.reshape( inv_ind.shape[0],1)
         selected_points_index.append(largest_indices)
-        selected_sims.append(np.sum(ind[:,largest_indices[0][0],largest_indices[1][0]]))
-    return selected_points_index, np.cumsum(selected_sims),max_det_array
+        new_detect_num=np.sum(ind[:,largest_indices[0][0],largest_indices[1][0]])
+        selected_sims.append(new_detect_num)
+        if new_detect_num==0:
+            break
+    return selected_points_index, np.cumsum(selected_sims),ind_array,max_det_array
  
 class GravityMonitoringOptimization:
     '''
@@ -78,7 +84,9 @@ class GravityMonitoringOptimization:
 
         self.outdir = params['outdir']
         self.ths=params['ths']
-        self.n_sta_gra=params['n_sta_gra']
+        self.n_sta_gra=params['max_sta_gra']
+        self.mass_centroid_file = params['mass_centroid_file']
+        self.dfmass = pd.read_csv(self.mass_centroid_file)
         # get subset of simulations
         if params['sim_subset_continue']:
             subset_list=range(params['sim_subset_continue'][0],params['sim_subset_continue'][1])
@@ -214,13 +222,15 @@ class GravityMonitoringOptimization:
                 plt.clabel(c, inline=True, fontsize=8, colors='black')
                 plt.title('time='+str(int(time))+' th='+str(th_gra))
                 # remove ticks
-                largest_indices = np.unravel_index(np.argsort(detectability.ravel())[-self.n_sta_gra:], detectability.shape)
-                
+                gra_all_sims = self.gra_data_all_t_all_sims[:, i, :, :]
+                selected_points_index, selected_sims,ind_array,max_det_array=find_best_gra_station(self.n_sta_gra,gra_all_sims,th_gra,self.ngy,self.ngx)
                 # Dictionary to store the data for this subplot
                 subplot_data = {'threshold': th_gra, 'time': time, 'points': []}
             # List to store the locations for this subplot
                 locations = []
-                for x, y in zip(largest_indices[1], largest_indices[0]):
+                for cordi in selected_points_index:
+                    y=cordi[0][0]
+                    x=cordi[1][0]
                     plt.scatter(self.grav_x[x], self.grav_y[y], color='white', marker='x')  # Mark the point
                     locations.append({'x': float(self.grav_x[x]), 'y': float(self.grav_y[y])})
                     # Record the data for this subplot
@@ -242,6 +252,82 @@ class GravityMonitoringOptimization:
                 
         plt.tight_layout()
         plt.savefig(self.outdir+'/detectability_time_th.png')
+
+    def find_mass_centroid(self, detected, yr):
+        '''
+        Find centroid xyz (m), mass (kg) and volume (m^3) from a lookup table
+        Parameters
+        ----------
+        detected: list(int)
+            a list of detected scenarios (simulation number)
+        yr: int
+            NUFT simulation time point
+
+        Returns
+        -------
+        centroid: list(list(float))
+        mass: list(float)
+        volume: list(float)
+
+        '''
+
+        centroid = []; volume = []; mass = []
+        for sim in detected:
+            cmv = self.dfmass[(self.dfmass['sim']==(sim+1)) & (self.dfmass['year']==yr)]
+            cmv = cmv.reset_index(drop=True)
+            try:
+                c = [cmv.loc[0,'cx'], cmv.loc[0,'cy'], cmv.loc[0,'cz']]
+                centroid.append(c)
+                volume.append(cmv.loc[0,'volume'])
+                mass.append(cmv.loc[0,'mass'])
+            except:
+                centroid.append([0,0,0])
+                volume.append(0)
+                mass.append(0)
+        return centroid, mass, volume
+    
+    def save_output_h5(self):
+        '''
+        save output to a h5 file
+        '''
+        print('Save gravity monitoring design to an H5 file')
+        outdir = os.path.join(self.outdir, 'grav_h5/')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        hdf5 = h5py.File(outdir + 'grav_optimal_design.h5', 'w')
+        for i,time in enumerate(self.times):
+            if i<1:
+                continue
+            group1 = hdf5.create_group('t' + str(i))
+            for j,th_gra in enumerate(self.ths):
+                group2 = group1.create_group('threshold ' + str(th_gra))
+                gra_all_sims = self.gra_data_all_t_all_sims[:, i, :, :]
+                selected_points_index, selected_sims,ind_array,max_det_array=find_best_gra_station(self.n_sta_gra,gra_all_sims,th_gra,self.ngy,self.ngx)
+                index0=np.arange(len(ind_array[0]))
+                locations = []
+                #detected=[]
+                for k,cordi in enumerate(selected_points_index):
+                    key = 'station_' + str(k+1)
+                    group3 = group2.create_group(key)
+                    y=cordi[0][0]
+                    x=cordi[1][0]
+                    locations.append({'x': float(self.grav_x[x]), 'y': float(self.grav_y[y])})
+                    group3.create_dataset('station location and # of leaks detected', data=[self.grav_x[x],self.grav_y[y],selected_sims[k]], dtype='float32')
+                    group3.create_dataset('unique detection in this station',data=index0[ind_array[k]], dtype='int')
+                    #print(index0[ind_array[k]])
+                    if k==0:
+                        detected=index0[ind_array[k]]
+                    else:
+                        np.append(detected,ind_array[k])
+                group2.create_dataset('number_of_scenarios detected', data=len(detected), dtype='int32')
+                # str_type = h5py.string_dtype(encoding='utf-8')
+                group2.create_dataset('scenarios_detected', data=detected, dtype='int32')
+                centroid, mass, volume = self.find_mass_centroid(detected, int(time))
+                group2.create_dataset('centroid', data=centroid, dtype='float64')
+                group2.create_dataset('volume', data=volume, dtype='float64')
+                group2.create_dataset('mass', data=mass, dtype='float64')
+
+
 
     def plot_max_detectability_vs_time(self):
         """
@@ -270,16 +356,16 @@ class GravityMonitoringOptimization:
 
     def plot_leaks_vs_stations(self):
 
-        n_select_point=self.n_sta_gra
+        max_select_point=self.n_sta_gra
         plt.figure(figsize=(24,6))
         k=0
         for j,th_gra in enumerate(self.ths):
             k=k+1
             plt.subplot(1,len(self.ths),k)
             for i,time in enumerate(self.times):
-                gra_all_sims=self.gra_data_all_t_all_sims[:,i,:,:]
-                selected_points_index, selected_sims,max_det_array=find_best_gra_station(n_select_point,gra_all_sims,th_gra, self.ngy, self.ngx)
-                plt.plot(np.arange(n_select_point)+1,selected_sims,'o-',label='{} years'.format(time))
+                gra_all_sims=self.gra_data_all_t_all_sims[:,i,:,:]                
+                selected_points_index, selected_sims,ind_array,max_det_array=find_best_gra_station(max_select_point,gra_all_sims,th_gra,self.ngy,self.ngx)
+                plt.plot(np.arange(len(selected_sims)-1)+1,selected_sims[:-1],'o-',label='{} years'.format(time))
             plt.legend(loc='lower right')
             plt.title('threshold {} mGal'.format(th_gra))
             plt.xlabel('number of stations')
@@ -297,6 +383,7 @@ if __name__ == "__main__":
     os.system('ulimit -n 4096')
     grav_data=GravityMonitoringOptimization(yaml_path)
     grav_data.calculate_detectability()
+    grav_data.save_output_h5()
     grav_data.plot_detectability()
     grav_data.plot_max_detectability_vs_time()
     grav_data.plot_leaks_vs_stations()
