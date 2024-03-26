@@ -971,8 +971,6 @@ except:
 # ====================================
 # Duplicate options commented out in detailed setup below
 # Use your API-Key
-#api_key = "db3f43a7-a871-4608-b349-48c8af2b3be2"
-#api_key = '2fb3645b-5657-4986-bf16-4fad657fbb45'
 api_key = inputs['edx_api_key']
 
 # Choose what data needs to be downloaded
