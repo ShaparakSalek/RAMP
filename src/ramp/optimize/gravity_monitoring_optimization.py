@@ -15,6 +15,8 @@ from utilities.data_readers.read_input_from_files import get_all_h5_filenames,re
 from utilities.read_write_hdf5 import *
 import argparse
 import pandas as pd
+import platform
+import subprocess
 
 def find_best_gra_station(max_select_point,gra_all_sims,th_gra,ngy,ngx):
     selected_points_index=[]
@@ -72,9 +74,10 @@ class GravityMonitoringOptimization:
         rootdir = params['rootdir']
         workspace_id=params['workspace_id']
         data_folder_id=params['data_folder_id']
+        #EDX_url=params['EDX_url'] 
         api_key=params['api_key']
         if not glob.glob(rootdir + 'sim*'):
-            download_data_from_edx(workspace_id,data_folder_id,api_key,rootdir) 
+            download_data_from_edx(workspace_id, data_folder_id,api_key,rootdir) 
             print('downloaded data from edx')
             for file in glob.glob(rootdir + 'sim*'):
                 print(file)
@@ -357,7 +360,7 @@ class GravityMonitoringOptimization:
     def plot_leaks_vs_stations(self):
 
         max_select_point=self.n_sta_gra
-        plt.figure(figsize=(24,6))
+        plt.figure(figsize=(30,6))
         k=0
         for j,th_gra in enumerate(self.ths):
             k=k+1
@@ -380,7 +383,8 @@ if __name__ == "__main__":
                         help='Path to the configuration YAML file.')
     args = parser.parse_args()
     yaml_path = args.config
-    os.system('ulimit -n 4096')
+    if platform.system()=='Darwin':
+        os.system('ulimit -n 4000')
     grav_data=GravityMonitoringOptimization(yaml_path)
     grav_data.calculate_detectability()
     grav_data.save_output_h5()

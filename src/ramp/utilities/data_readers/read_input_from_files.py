@@ -59,7 +59,8 @@ def read_sens_from_segy(filename,sen_nor):
     return sens
 
 def download_data_from_edx(workspace_id, folder_id, api_key, outdir):
-    headers = {"EDX-API-Key": api_key}
+    headers = {"EDX-API-Key": api_key,
+               "User-Agent": "EDX-USER"}
 
     data = {
         "workspace_id": workspace_id,
