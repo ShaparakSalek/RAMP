@@ -68,7 +68,7 @@ GravityMonitoringOptimization:
   # EDX data folder id https://edx.netl.doe.gov/workspace/nrap-task-4-monitoring/folder/105d8031-46a2-4c02-82ce-042b74a432f9
   data_folder_id: '105d8031-46a2-4c02-82ce-042b74a432f9'
   # api key, you can get this by hovering your mouse at EDX profile page 'EDX-API-KEY'
-  api_key: ' '
+  api_key: ''
   # npy numpy array shape
   nx: 40
   ny: 20
@@ -91,7 +91,7 @@ GravityMonitoringOptimization:
   # Output directory
   outdir: './output'
   # detection thresholds
-  ths: [3,5,7,10,15,20]
+  ths: [5,10,15]
   # max number of gravity stations
   max_sta_gra: 10
   # subset of the simulation, continuous numbers, e.g. [200,500] means from 200th to 500th simulations, the max simulation number is 1000
