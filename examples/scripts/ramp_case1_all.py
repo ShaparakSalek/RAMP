@@ -1261,7 +1261,7 @@ if __name__ == "__main__":
                 except:
                     pass
 
-        headers = {"EDX-API-Key": inputs['edx_api_key']}
+        headers = {"EDX-API-Key": inputs['edx_api_key'], "User-Agent": inputs['edx_user']}
 
         data = {
             'workspace_id': 'nrap-task-4-monitoring',
