@@ -2,6 +2,7 @@
  # login to EDX and go to your account to find your edx api key
  # take care not to share that key broadly
  "edx_api_key": "your-api-key-here",
+ "edx_user": "your-edx-username-here",
 
  # defines whether or not to download the necessary datasets from EDX
  # in most cases, set this value to true only on the first run
