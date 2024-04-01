@@ -10,7 +10,7 @@
  "download_data": false,
 
  # defines whether or not to run the optimization
- "run_optimization": false,
+ "run_optimization": true,
 
  # defines whether or not to generate output images
  "plot_results": true,
